@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Pro Racing Game - Shield Mode</title>
+    <title>Pro Racing Game - Speed Boost</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        #game-container { position: relative; border: 5px solid #444; border-radius: 10px; overflow: hidden; }
+        #game-container { position: relative; border: 5px solid #444; border-radius: 10px; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.7); }
         canvas { background: #2c3e50; display: block; }
         
-        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.6); box-sizing: border-box; }
+        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.7); box-sizing: border-box; z-index: 10; }
         .stats { color: white; font-size: 16px; font-weight: bold; }
         .btn-group { display: flex; gap: 8px; }
         
-        button { padding: 6px 12px; font-size: 12px; cursor: pointer; border: none; border-radius: 4px; background: #e74c3c; color: white; font-weight: bold; }
+        button { padding: 8px 15px; font-size: 12px; cursor: pointer; border: none; border-radius: 4px; background: #e74c3c; color: white; font-weight: bold; text-transform: uppercase; }
         button:hover { background: #ff5e4d; }
         #pauseBtn { background: #f1c40f; color: #000; }
         
-        #shield-timer { position: absolute; top: 60px; width: 100%; text-align: center; color: #ff3f81; font-weight: bold; font-size: 20px; display: none; text-shadow: 0 0 10px #ff3f81; }
+        #shield-timer { position: absolute; top: 60px; width: 100%; text-align: center; color: #ff3f81; font-weight: bold; font-size: 20px; display: none; text-shadow: 0 0 10px #ff3f81; z-index: 5; }
+        #speed-alert { position: absolute; bottom: 20px; width: 100%; text-align: center; color: #2ecc71; font-weight: bold; font-size: 14px; opacity: 0; transition: 0.5s; }
     </style>
 </head>
 <body>
@@ -30,6 +31,7 @@
         </div>
         
         <div id="shield-timer">SHIELD ACTIVE: <span id="timer">5</span>s</div>
+        <div id="speed-alert">LEVEL UP: SPEED INCREASED! ⚡</div>
         <canvas id="gameCanvas"></canvas>
     </div>
 
@@ -40,6 +42,7 @@
         const highscoreElement = document.getElementById('highScore');
         const shieldUI = document.getElementById('shield-timer');
         const timerVal = document.getElementById('timer');
+        const speedAlert = document.getElementById('speed-alert');
 
         canvas.width = 400;
         canvas.height = 600;
@@ -52,10 +55,11 @@
         let isPaused = false;
         let isShielded = false;
         let shieldTimeLeft = 0;
+        let difficultyMultiplier = 1; // Speed barhane ke liye
 
         let car = { x: 175, y: 480, w: 45, h: 85, speed: 7 };
         let enemies = [];
-        let hearts = []; // Power-up list
+        let hearts = [];
         const lanes = [40, 130, 220, 310];
 
         let keys = {};
@@ -63,15 +67,12 @@
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         function drawCar(x, y, color, isPlayer) {
-            // Shield Effect (Glow)
             if (isPlayer && isShielded) {
                 ctx.shadowBlur = 20;
                 ctx.shadowColor = "#ff3f81";
                 ctx.strokeStyle = "#ff3f81";
                 ctx.lineWidth = 3;
                 ctx.strokeRect(x-5, y-5, 55, 95);
-            } else {
-                ctx.shadowBlur = 0;
             }
 
             ctx.fillStyle = "#000"; // Wheels
@@ -83,25 +84,28 @@
             
             ctx.fillStyle = "rgba(255,255,255,0.4)"; // Window
             isPlayer ? ctx.fillRect(x+5, y+15, 35, 12) : ctx.fillRect(x+5, y+58, 35, 12);
-            ctx.shadowBlur = 0; // Reset blur
+            ctx.shadowBlur = 0;
         }
 
         function drawHeart(x, y) {
-            ctx.fillStyle = "#ff3f81";
             ctx.font = "30px Arial";
             ctx.fillText("❤️", x, y);
         }
 
         function spawnObjects() {
-            // Spawn Enemies
-            if (Math.random() < 0.02 && enemies.length < 3) {
+            // Jaise score barhega, spawn rate bhi barhega
+            let spawnChance = 0.02 + (score > 20 ? (score - 20) * 0.001 : 0);
+            
+            if (Math.random() < spawnChance && enemies.length < 4) {
                 let lane = lanes[Math.floor(Math.random() * lanes.length)];
                 if (!enemies.some(e => e.y < 200 && e.x === lane)) {
-                    enemies.push({ x: lane, y: -100, w: 45, h: 85, speed: 4 + Math.random() * 4 });
+                    // Score 20 ke baad speed barhna shuru hogi
+                    let baseSpeed = 4 + (score > 20 ? (score - 20) * 0.2 : 0);
+                    enemies.push({ x: lane, y: -100, w: 45, h: 85, speed: baseSpeed + Math.random() * 2 });
                 }
             }
-            // Spawn Hearts
-            if (Math.random() < 0.005 && hearts.length < 1 && !isShielded) {
+
+            if (Math.random() < 0.003 && hearts.length < 1 && !isShielded) {
                 hearts.push({ x: lanes[Math.floor(Math.random()*lanes.length)] + 10, y: -50, w: 30, h: 30 });
             }
         }
@@ -110,7 +114,6 @@
             isShielded = true;
             shieldTimeLeft = 5;
             shieldUI.style.display = "block";
-            
             let timerInterval = setInterval(() => {
                 if (isPaused) return;
                 shieldTimeLeft--;
@@ -133,6 +136,7 @@
             score = 0; scoreElement.innerText = score;
             enemies = []; hearts = [];
             isShielded = false; shieldUI.style.display = "none";
+            speedAlert.style.opacity = 0;
             car.x = 175; gameActive = true; isPaused = false;
         }
 
@@ -142,6 +146,12 @@
             if (keys['ArrowLeft'] && car.x > 10) car.x -= car.speed;
             if (keys['ArrowRight'] && car.x < canvas.width - car.w - 10) car.x += car.speed;
 
+            // Speed Increase Alert
+            if (score === 21) {
+                speedAlert.style.opacity = 1;
+                setTimeout(() => speedAlert.style.opacity = 0, 3000);
+            }
+
             // Enemies Update
             enemies.forEach((enemy, index) => {
                 enemy.y += enemy.speed;
@@ -149,12 +159,20 @@
                     car.y < enemy.y + enemy.h && car.y + car.h > enemy.y) {
                     if (!isShielded) {
                         gameActive = false;
-                        if(score > highScore) localStorage.setItem('racingHighScore', score);
-                        alert("GAME OVER! Score: " + score);
+                        if(score > highScore) {
+                            highScore = score;
+                            localStorage.setItem('racingHighScore', score);
+                            highscoreElement.innerText = highScore;
+                        }
+                        alert("BOOM! Game Over. Score: " + score);
                         resetGame();
                     }
                 }
-                if (enemy.y > canvas.height) { enemies.splice(index, 1); score++; scoreElement.innerText = score; }
+                if (enemy.y > canvas.height) { 
+                    enemies.splice(index, 1); 
+                    score++; 
+                    scoreElement.innerText = score; 
+                }
             });
 
             // Hearts Update
@@ -172,19 +190,23 @@
 
         function draw() {
             ctx.fillStyle = "#2c3e50"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            // Road Lines
-            ctx.strokeStyle = "white"; ctx.setLineDash([20, 30]);
+            
+            // Road Lines Animation
+            ctx.strokeStyle = "rgba(255,255,255,0.6)"; 
+            ctx.setLineDash([30, 30]);
+            ctx.lineDashOffset -= (5 + (score > 20 ? (score-20)*0.1 : 0)); 
+            
             for(let i=1; i<4; i++) {
                 ctx.beginPath(); ctx.moveTo(i * 100, 0); ctx.lineTo(i * 100, canvas.height); ctx.stroke();
             }
-            // Draw Objects
+
             drawCar(car.x, car.y, "#00d2ff", true);
             enemies.forEach(e => drawCar(e.x, e.y, "#e74c3c", false));
             hearts.forEach(h => drawHeart(h.x, h.y));
         }
 
         function animate() {
-            if (isPaused) return;
+            if (isPaused || !gameActive) return;
             update();
             draw();
             requestAnimationFrame(animate);
