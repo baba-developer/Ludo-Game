@@ -3,159 +3,125 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Ludo - MultiPlayer</title>
+    <title>Real Ludo Pro</title>
     <style>
         :root { --red: #e74c3c; --green: #2ecc71; --yellow: #f1c40f; --blue: #3498db; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #1a1a1a; color: white; margin: 0; padding: 10px; }
+        body { margin: 0; background: #2c3e50; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: sans-serif; overflow: hidden; }
         
-        #game-board { 
-            position: relative; width: 360px; height: 360px; background: #fff; 
+        #main-container { position: relative; width: 450px; height: 550px; display: flex; flex-direction: column; align-items: center; }
+
+        /* Board Design */
+        #ludo-board { 
+            width: 400px; height: 400px; background: white; border: 5px solid #333;
             display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-            border: 8px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .cell { border: 0.1px solid #ddd; position: relative; display: flex; align-items: center; justify-content: center; }
+        .cell { border: 0.5px solid #ddd; position: relative; }
+        .red-home { background: var(--red); }
+        .green-home { background: var(--green); }
+        .yellow-home { background: var(--yellow); }
+        .blue-home { background: var(--blue); }
         
-        /* Coloring Zones */
-        .r-zone { background-color: var(--red); }
-        .g-zone { background-color: var(--green); }
-        .y-zone { background-color: var(--yellow); }
-        .b-zone { background-color: var(--blue); }
-        .safe { background-color: #ecf0f1; border: 1px solid #bdc3c7; }
+        /* Dice Box (Floating) */
+        #dice-container { 
+            position: absolute; width: 60px; height: 60px; background: white; 
+            border-radius: 10px; border: 3px solid #333; display: flex; 
+            justify-content: center; align-items: center; font-size: 40px; 
+            cursor: pointer; transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
 
-        /* Goti Styles */
+        /* Piece Styles */
         .piece { 
-            width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; 
-            position: absolute; z-index: 10; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+            width: 18px; height: 18px; border-radius: 50%; border: 2px solid white;
+            position: absolute; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.5);
         }
-        .p-red { background: var(--red); }
-        .p-green { background: var(--green); }
-        .p-yellow { background: var(--yellow); }
-        .p-blue { background: var(--blue); }
 
-        /* UI Controls */
-        #controls { margin-top: 20px; text-align: center; background: #333; padding: 15px; border-radius: 10px; width: 330px; }
-        #dice-val { font-size: 45px; margin: 10px 0; }
-        .turn-indicator { padding: 8px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; }
-        button { background: #fff; color: #000; border: none; padding: 10px 25px; font-size: 18px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
-        button:active { transform: scale(0.98); }
-        button:disabled { background: #555; color: #888; }
+        /* Turn Indicator Message */
+        #msg { color: white; margin-bottom: 10px; font-weight: bold; font-size: 18px; text-transform: uppercase; }
         
-        .winner-msg { color: #f1c40f; font-size: 20px; margin-top: 10px; display: none; }
+        /* Positions for Dice Box */
+        .pos-red { top: 70px; left: 70px; border-color: var(--red) !important; }
+        .pos-green { top: 70px; right: 70px; border-color: var(--green) !important; }
+        .pos-yellow { bottom: 70px; right: 70px; border-color: var(--yellow) !important; }
+        .pos-blue { bottom: 70px; left: 70px; border-color: var(--blue) !important; }
+
     </style>
 </head>
 <body>
 
-    <div id="status-bar" class="turn-indicator" style="background: var(--red);">Red's Turn</div>
-
-    <div id="game-board">
+<div id="main-container">
+    <div id="msg">RED'S TURN</div>
+    
+    <div id="ludo-board">
         </div>
 
-    <div id="controls">
-        <div id="dice-val">🎲</div>
-        <button id="roll-btn" onclick="rollDice()">Roll Dice</button>
-        <div id="winner" class="winner-msg">WINNER!</div>
-    </div>
+    <div id="dice-container" class="pos-red" onclick="rollDice()">🎲</div>
+</div>
 
-    <script>
-        const board = document.getElementById('game-board');
-        const status = document.getElementById('status-bar');
-        const colors = ['red', 'green', 'yellow', 'blue'];
-        const colorCodes = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
-        let turn = 0; // 0:Red, 1:Green, 2:Yellow, 3:Blue
-        let diceValue = 0;
-        let canRoll = true;
+<script>
+    const board = document.getElementById('ludo-board');
+    const dice = document.getElementById('dice-container');
+    const msg = document.getElementById('msg');
+    
+    let turn = 0; // 0:Red, 1:Green, 2:Yellow, 3:Blue
+    const colors = ['red', 'green', 'yellow', 'blue'];
+    const dicePositions = ['pos-red', 'pos-green', 'pos-yellow', 'pos-blue'];
 
-        // Simplified Path Logic for 4 players
-        const paths = {
-            red: [[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[7,13],[7,12],[7,11],[7,10],[7,9]],
-            green: [[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[13,7],[12,7],[11,7],[10,7],[9,7]],
-            // Paths simplified for demo; full 52-cell logic can be added
-        };
-
-        const players = {
-            red: { pos: -1, start: [2,2], class: 'p-red' },
-            green: { pos: -1, start: [2,12], class: 'p-green' },
-            yellow: { pos: -1, start: [12,12], class: 'p-yellow' },
-            blue: { pos: -1, start: [12,2], class: 'p-blue' }
-        };
-
-        // Create Board
-        for (let r = 0; r < 15; r++) {
-            for (let c = 0; c < 15; c++) {
-                const cell = document.createElement('div');
-                cell.className = 'cell';
-                if ((r < 6 && c < 6)) cell.classList.add('r-zone');
-                else if ((r < 6 && c > 8)) cell.classList.add('g-zone');
-                else if ((r > 8 && c > 8)) cell.classList.add('y-zone');
-                else if ((r > 8 && c < 6)) cell.classList.add('b-zone');
-                else cell.classList.add('safe');
-                cell.id = `c-${r}-${c}`;
-                board.appendChild(cell);
-            }
-        }
-
-        // Initialize Pieces
-        function initGame() {
-            Object.keys(players).forEach(color => {
-                const p = players[color];
-                const piece = document.createElement('div');
-                piece.className = `piece ${p.class}`;
-                piece.id = `piece-${color}`;
-                document.getElementById(`c-${p.start[0]}-${p.start[1]}`).appendChild(piece);
-            });
-        }
-
-        function rollDice() {
-            if (!canRoll) return;
-            diceValue = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dice-val').innerText = getDiceEmoji(diceValue);
-            canRoll = false;
+    // Generate Board
+    for (let r = 0; r < 15; r++) {
+        for (let c = 0; c < 15; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
             
-            setTimeout(() => moveLogic(), 400);
+            // Layout coloring logic
+            if (r < 6 && c < 6) cell.classList.add('red-home');
+            else if (r < 6 && c > 8) cell.classList.add('green-home');
+            else if (r > 8 && c > 8) cell.classList.add('yellow-home');
+            else if (r > 8 && c < 6) cell.classList.add('blue-home');
+            else if (r === 7 && c > 0 && c < 7) cell.classList.add('red-home');
+            else if (c === 7 && r > 0 && r < 7) cell.classList.add('green-home');
+            else if (r === 7 && c > 7 && c < 14) cell.classList.add('yellow-home');
+            else if (c === 7 && r > 7 && r < 14) cell.classList.add('blue-home');
+            
+            cell.id = `c-${r}-${c}`;
+            board.appendChild(cell);
         }
+    }
 
-        function moveLogic() {
-            let color = colors[turn];
-            let p = players[color];
-
-            if (p.pos === -1) {
-                if (diceValue === 6) {
-                    p.pos = 0;
-                    updatePiece(color);
-                }
-            } else {
-                p.pos += diceValue;
-                if (p.pos >= 30) p.pos = 29; // Cap for demo
-                updatePiece(color);
+    function rollDice() {
+        dice.style.pointerEvents = 'none'; // Click disable
+        let roll = Math.floor(Math.random() * 6) + 1;
+        
+        // Rolling animation
+        let count = 0;
+        let anim = setInterval(() => {
+            dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][Math.floor(Math.random()*6)];
+            count++;
+            if(count > 10) {
+                clearInterval(anim);
+                dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][roll-1];
+                finishTurn(roll);
             }
+        }, 50);
+    }
 
-            // Next Turn
-            if (diceValue !== 6) {
+    function finishTurn(roll) {
+        setTimeout(() => {
+            if (roll !== 6) {
                 turn = (turn + 1) % 4;
             }
             
-            status.innerText = `${colors[turn].toUpperCase()}'s Turn`;
-            status.style.background = colorCodes[turn];
-            canRoll = true;
-        }
-
-        function updatePiece(color) {
-            const p = players[color];
-            const piece = document.getElementById(`piece-${color}`);
-            let coords = p.pos === -1 ? p.start : (paths[color] ? paths[color][p.pos] : p.start);
+            // Move Dice to next player's box
+            dice.className = dicePositions[turn];
+            msg.innerText = colors[turn] + "'s Turn";
+            msg.style.color = `var(--${colors[turn]})`;
             
-            if (coords) {
-                document.getElementById(`c-${coords[0]}-${coords[1]}`).appendChild(piece);
-            }
-        }
+            dice.style.pointerEvents = 'all';
+        }, 800);
+    }
 
-        function getDiceEmoji(n) {
-            return ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][n-1];
-        }
-
-        initGame();
-    </script>
+</script>
 </body>
 </html>
