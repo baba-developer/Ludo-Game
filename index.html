@@ -1,161 +1,91 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Ludo Pro Mobile</title>
+    <title>My Live Racing Game</title>
     <style>
-        :root { --red: #e74c3c; --green: #2ecc71; --yellow: #f1c40f; --blue: #3498db; }
-        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; color: white; touch-action: manipulation; }
-        
-        /* Responsive Board */
-        #ludo-board { 
-            width: 95vw; height: 95vw; max-width: 450px; max-height: 450px;
-            background: white; border: 4px solid #333; display: grid; 
-            grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-            position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.5);
-        }
-
-        .cell { position: relative; display: flex; align-items: center; justify-content: center; border: 0.1px solid rgba(0,0,0,0.03); }
-        
-        /* Design Clean-up (No thick white lines) */
-        .r-zone { background: var(--red) !important; border: none; }
-        .g-zone { background: var(--green) !important; border: none; }
-        .y-zone { background: var(--yellow) !important; border: none; }
-        .b-zone { background: var(--blue) !important; border: none; }
-        
-        /* Professional Black Arrows */
-        .arrow-black { font-size: 20px; color: #000; font-weight: bold; z-index: 5; pointer-events: none; }
-        .up { transform: rotate(-90deg); } .down { transform: rotate(90deg); }
-        .left { transform: rotate(180deg); } .right { transform: rotate(0deg); }
-
-        /* Pieces */
-        .piece { 
-            width: 70%; height: 70%; border-radius: 50%; border: 2px solid white;
-            position: absolute; z-index: 100; cursor: pointer; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-            box-shadow: 0 3px 6px rgba(0,0,0,0.4);
-        }
-
-        /* Dice UI */
-        #ui-layer { display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; }
-        #dice-box { 
-            width: 60px; height: 60px; background: white; border: 3px solid #333; 
-            border-radius: 10px; font-size: 35px; display: flex; justify-content: center; 
-            align-items: center; cursor: pointer; color: black; transition: 0.2s;
-        }
-        #dice-box:active { transform: scale(0.9); }
-        #msg { margin-top: 5px; font-weight: bold; font-size: 16px; text-transform: uppercase; letter-spacing: 1px; }
-
+        body { margin: 0; overflow: hidden; background: #222; font-family: Arial; }
+        canvas { display: block; margin: 0 auto; background: #333; border-left: 5px dashed white; border-right: 5px dashed white; }
+        #score { position: absolute; top: 20px; left: 20px; color: white; font-size: 24px; }
     </style>
 </head>
 <body>
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
 
-    <div id="ui-layer">
-        <div id="dice-box" onclick="rollDice()">🎲</div>
-        <div id="msg">Red's Turn</div>
-    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
 
-    <div id="ludo-board"></div>
+        canvas.width = 400;
+        canvas.height = window.innerHeight;
 
-<script>
-    const board = document.getElementById('ludo-board');
-    const dice = document.getElementById('dice-box');
-    const msg = document.getElementById('msg');
-    
-    let turn = 0; let lastRoll = 0; let canMove = false;
-    const colors = ['red', 'green', 'yellow', 'blue'];
+        let score = 0;
+        let car = { x: 175, y: canvas.height - 100, w: 50, h: 80, speed: 5 };
+        let enemies = [];
+        let gameActive = true;
 
-    // 1. Path & Logic
-    const commonPath = [[6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0]];
-    const startIdx = { red: 1, green: 14, yellow: 27, blue: 40 };
+        // Controls
+        let keys = {};
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
-    // 2. Generate Board with Arrows
-    for (let r = 0; r < 15; r++) {
-        for (let c = 0; c < 15; c++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.id = `c-${r}-${c}`;
-
-            // Base Coloring
-            if (r < 6 && c < 6) cell.classList.add('r-zone');
-            else if (r < 6 && c > 8) cell.classList.add('g-zone');
-            else if (r > 8 && c > 8) cell.classList.add('y-zone');
-            else if (r > 8 && c < 6) cell.classList.add('b-zone');
-            // Home Path Coloring
-            else if (r === 7 && c > 0 && c < 7) cell.classList.add('r-zone');
-            else if (c === 7 && r > 0 && r < 7) cell.classList.add('g-zone');
-            else if (r === 7 && c > 7 && c < 14) cell.classList.add('y-zone');
-            else if (c === 7 && r > 7 && r < 14) cell.classList.add('b-zone');
-
-            // Add Black Arrows (Exactly where you marked in screenshot)
-            if (r === 6 && c === 2) cell.innerHTML = '<div class="arrow-black right">➔</div>';
-            if (r === 2 && c === 8) cell.innerHTML = '<div class="arrow-black down">➔</div>';
-            if (r === 8 && c === 12) cell.innerHTML = '<div class="arrow-black left">➔</div>';
-            if (r === 12 && c === 6) cell.innerHTML = '<div class="arrow-black up">➔</div>';
-
-            board.appendChild(cell);
+        function spawnEnemy() {
+            if (Math.random() < 0.02) {
+                enemies.push({ x: Math.random() * (canvas.width - 50), y: -100, w: 50, h: 80, speed: 3 + Math.random() * 5 });
+            }
         }
-    }
 
-    // 3. Pieces Setup
-    const pieces = [];
-    const homes = {
-        red: [[1,1],[1,4],[4,1],[4,4]],
-        green: [[1,10],[1,13],[4,10],[4,13]],
-        yellow: [[10,10],[10,13],[13,10],[13,13]],
-        blue: [[10,1],[10,4],[13,1],[13,4]]
-    };
+        function update() {
+            if (!gameActive) return;
 
-    function init() {
-        colors.forEach(color => {
-            homes[color].forEach((h, i) => {
-                const p = { id: `${color}-${i}`, color, status: 'home', pos: -1, home: h };
-                pieces.push(p);
-                const pEl = document.createElement('div');
-                pEl.className = `piece`;
-                pEl.style.backgroundColor = `var(--${color})`;
-                pEl.id = p.id;
-                pEl.onclick = () => tryMove(p);
-                document.getElementById(`c-${h[0]}-${h[1]}`).appendChild(pEl);
+            // Move Car
+            if (keys['ArrowLeft'] && car.x > 0) car.x -= car.speed;
+            if (keys['ArrowRight'] && car.x < canvas.width - car.w) car.x += car.speed;
+
+            // Move Enemies
+            enemies.forEach((enemy, index) => {
+                enemy.y += enemy.speed;
+                
+                // Collision Detection
+                if (car.x < enemy.x + enemy.w && car.x + car.w > enemy.x &&
+                    car.y < enemy.y + enemy.h && car.y + car.h > enemy.y) {
+                    gameActive = false;
+                    alert("Game Over! Score: " + score);
+                    location.reload();
+                }
+
+                // Remove off-screen enemies and update score
+                if (enemy.y > canvas.height) {
+                    enemies.splice(index, 1);
+                    score++;
+                    scoreElement.innerText = "Score: " + score;
+                }
             });
-        });
-    }
 
-    function rollDice() {
-        if (canMove) return;
-        lastRoll = Math.floor(Math.random() * 6) + 1;
-        dice.innerText = ['⚀','⚁','⚂','⚃','⚄','⚅'][lastRoll-1];
-        
-        const myPieces = pieces.filter(p => p.color === colors[turn]);
-        const canJump = myPieces.some(p => (p.status === 'home' && lastRoll === 6) || p.status === 'out');
-
-        if (canJump) { canMove = true; msg.innerText = "Move a piece!"; } 
-        else { msg.innerText = "No moves!"; setTimeout(nextTurn, 1000); }
-    }
-
-    function tryMove(p) {
-        if (!canMove || p.color !== colors[turn]) return;
-        if (p.status === 'home' && lastRoll === 6) {
-            p.status = 'out'; p.pos = 0; updatePos(p); canMove = false;
-        } else if (p.status === 'out') {
-            p.pos += lastRoll; if (p.pos >= 52) p.pos = 51; updatePos(p);
-            if (lastRoll !== 6) nextTurn(); else canMove = false;
+            spawnEnemy();
         }
-    }
 
-    function updatePos(p) {
-        const idx = (startIdx[p.color] + p.pos) % 52;
-        const coords = commonPath[idx];
-        document.getElementById(`c-${coords[0]}-${coords[1]}`).appendChild(document.getElementById(p.id));
-    }
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function nextTurn() {
-        canMove = false; turn = (turn + 1) % 4;
-        msg.innerText = colors[turn] + "'s turn";
-        msg.style.color = `var(--${colors[turn]})`;
-    }
+            // Draw Player Car (Blue)
+            ctx.fillStyle = 'cyan';
+            ctx.fillRect(car.x, car.y, car.w, car.h);
 
-    init();
-</script>
+            // Draw Enemies (Red)
+            ctx.fillStyle = 'red';
+            enemies.forEach(enemy => {
+                ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+            });
+
+            requestAnimationFrame(() => {
+                update();
+                draw();
+            });
+        }
+
+        draw();
+    </script>
 </body>
 </html>
