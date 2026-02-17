@@ -2,24 +2,24 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro Racing Mobile</title>
+    <title>Racing Game - Fixed Controls</title>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; touch-action: manipulation; }
         
-        #game-container { position: relative; width: 100vw; max-width: 400px; height: 70vh; background: #2c3e50; border-bottom: 5px solid #444; }
+        #game-container { position: relative; width: 100vw; max-width: 400px; height: 75vh; background: #2c3e50; border-bottom: 2px solid #444; }
         canvas { width: 100%; height: 100%; display: block; }
         
-        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.7); box-sizing: border-box; z-index: 10; }
-        .stats { color: white; font-size: 14px; font-weight: bold; }
+        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 8px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.8); box-sizing: border-box; z-index: 10; }
+        .stats { color: white; font-size: 13px; font-weight: bold; }
         
-        /* Mobile Controls */
-        #mobile-controls { width: 100%; max-width: 400px; height: 30vh; display: flex; justify-content: space-around; align-items: center; background: #333; padding: 10px; box-sizing: border-box; }
-        .ctrl-btn { width: 120px; height: 80px; background: #555; border: none; border-radius: 15px; color: white; font-size: 40px; font-weight: bold; -webkit-user-select: none; user-select: none; box-shadow: 0 6px #222; }
-        .ctrl-btn:active { background: #777; box-shadow: 0 2px #222; transform: translateY(4px); }
+        /* Chote Arrow Buttons */
+        #mobile-controls { width: 100%; max-width: 400px; height: 25vh; display: flex; justify-content: center; gap: 40px; align-items: center; background: #222; }
+        .ctrl-btn { width: 70px; height: 70px; background: #444; border: 2px solid #666; border-radius: 50%; color: white; font-size: 30px; display: flex; justify-content: center; align-items: center; -webkit-user-select: none; user-select: none; cursor: pointer; }
+        .ctrl-btn:active { background: #00d2ff; transform: scale(0.9); border-color: white; }
         
-        button.ui-btn { padding: 5px 10px; font-size: 10px; cursor: pointer; border: none; border-radius: 4px; background: #e74c3c; color: white; font-weight: bold; }
+        .ui-btn { padding: 4px 8px; font-size: 10px; cursor: pointer; border: none; border-radius: 3px; background: #e74c3c; color: white; font-weight: bold; }
         #pauseBtn { background: #f1c40f; color: #000; }
-        #shield-timer { position: absolute; top: 50px; width: 100%; text-align: center; color: #ff3f81; font-weight: bold; display: none; }
+        #shield-timer { position: absolute; top: 50px; width: 100%; text-align: center; color: #ff3f81; font-weight: bold; display: none; font-size: 18px; }
     </style>
 </head>
 <body>
@@ -32,7 +32,7 @@
                 <button class="ui-btn" onclick="resetGame()">RESET</button>
             </div>
         </div>
-        <div id="shield-timer">SHIELD: <span id="timer">5</span>s</div>
+        <div id="shield-timer">🛡️ SHIELD: <span id="timer">5</span>s</div>
         <canvas id="gameCanvas"></canvas>
     </div>
 
@@ -48,7 +48,6 @@
         const highscoreElement = document.getElementById('highScore');
         const shieldUI = document.getElementById('shield-timer');
 
-        // Screen Size Adjustment
         function resize() {
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
@@ -63,26 +62,28 @@
         let gameActive = true, isPaused = false, isShielded = false;
         let car = { x: 175, y: 0, w: 45, h: 80, speed: 7 };
         let enemies = [], hearts = [];
-        const lanes = [canvas.width*0.1, canvas.width*0.35, canvas.width*0.6, canvas.width*0.8];
+        let lanes = [canvas.width*0.1, canvas.width*0.35, canvas.width*0.6, canvas.width*0.8];
 
         // Controls Logic
-        let keys = {};
-        window.addEventListener('keydown', e => keys[e.code] = true);
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        let keys = { ArrowLeft: false, ArrowRight: false };
 
-        // Mobile Button Touch Logic
+        // Sahi Mobile Logic (No swap)
         const lBtn = document.getElementById('leftBtn');
         const rBtn = document.getElementById('rightBtn');
+
         lBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowLeft'] = true; });
-        lBtn.addEventListener('touchend', () => keys['ArrowLeft'] = false);
+        lBtn.addEventListener('touchend', () => { keys['ArrowLeft'] = false; });
+        
         rBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys['ArrowRight'] = true; });
-        rBtn.addEventListener('touchend', () => keys['ArrowRight'] = false);
+        rBtn.addEventListener('touchend', () => { keys['ArrowRight'] = false; });
+
+        // PC Support
+        window.addEventListener('keydown', e => { if(e.code==='ArrowLeft') keys.ArrowLeft=true; if(e.code==='ArrowRight') keys.ArrowRight=true; });
+        window.addEventListener('keyup', e => { if(e.code==='ArrowLeft') keys.ArrowLeft=false; if(e.code==='ArrowRight') keys.ArrowRight=false; });
 
         function drawCar(x, y, color, isPlayer) {
-            if (isPlayer && isShielded) {
-                ctx.shadowBlur = 15; ctx.shadowColor = "#ff3f81";
-            }
-            ctx.fillStyle = "#000"; // Wheels
+            if (isPlayer && isShielded) { ctx.shadowBlur = 15; ctx.shadowColor = "#ff3f81"; }
+            ctx.fillStyle = "#000";
             ctx.fillRect(x-2, y+10, 5, 15); ctx.fillRect(x+42, y+10, 5, 15);
             ctx.fillRect(x-2, y+55, 5, 15); ctx.fillRect(x+42, y+55, 5, 15);
             ctx.fillStyle = color;
@@ -104,10 +105,11 @@
 
         function update() {
             if (!gameActive || isPaused) return;
-            car.y = canvas.height - 120; // Keep car at bottom
+            car.y = canvas.height - 110;
 
-            if (keys['ArrowLeft'] && car.x > 5) car.x -= car.speed;
-            if (keys['ArrowRight'] && car.x < canvas.width - 50) car.x += car.speed;
+            // Correct Movement
+            if (keys.ArrowLeft && car.x > 5) car.x -= car.speed;
+            if (keys.ArrowRight && car.x < canvas.width - 50) car.x += car.speed;
 
             enemies.forEach((enemy, i) => {
                 enemy.y += enemy.speed;
@@ -115,7 +117,7 @@
                     if (!isShielded) {
                         gameActive = false;
                         if(score > highScore) localStorage.setItem('racingHighScore', score);
-                        alert("Crash! Score: " + score);
+                        alert("BOOM! Crash. Score: " + score);
                         resetGame();
                     }
                 }
@@ -127,14 +129,16 @@
                 if (car.x < h.x + 30 && car.x + 45 > h.x && car.y < h.y + 30 && car.y + 80 > h.y) {
                     hearts.splice(i, 1); activateShield();
                 }
+                if(h.y > canvas.height) hearts.splice(i, 1);
             });
             spawn();
         }
 
         function activateShield() {
             isShielded = true; shieldUI.style.display = "block";
-            let time = 5;
+            let time = 5; document.getElementById('timer').innerText = time;
             let itv = setInterval(() => {
+                if(isPaused) return;
                 time--; document.getElementById('timer').innerText = time;
                 if(time <= 0) { clearInterval(itv); isShielded = false; shieldUI.style.display = "none"; }
             }, 1000);
