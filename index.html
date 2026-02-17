@@ -3,142 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Original Ludo Game</title>
+    <title>Real Ludo - 16 Pieces</title>
     <style>
         :root { --red: #ff0000; --green: #008000; --yellow: #ffff00; --blue: #0000ff; }
-        body { margin: 0; background: #121212; display: flex; justify-content: center; align-items: center; height: 100vh; font-family: 'Arial', sans-serif; }
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
         
-        #main-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; }
-
-        /* Board Styling as per your image */
         #ludo-board { 
-            width: 450px; height: 450px; background: #fff; border: 4px solid #000;
+            width: 420px; height: 420px; background: white; border: 5px solid #333;
             display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-            position: relative;
+            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
 
-        .cell { border: 1px solid #000; position: relative; display: flex; align-items: center; justify-content: center; }
+        .cell { border: 0.5px solid #ccc; position: relative; display: flex; align-items: center; justify-content: center; z-index: 1; }
         
-        /* Specific Zones based on your Image */
-        .r-zone { background: var(--red); }
-        .g-zone { background: var(--green); }
-        .y-zone { background: var(--yellow); }
-        .b-zone { background: var(--blue); }
+        /* Home Bases */
+        .red-base { background: var(--red); }
+        .green-base { background: var(--green); }
+        .yellow-base { background: var(--yellow); }
+        .blue-base { background: var(--blue); }
         
-        /* Pieces Design */
+        /* White circles inside bases for pieces */
+        .piece-spot { width: 30px; height: 30px; background: white; border-radius: 50%; border: 2px solid rgba(0,0,0,0.2); }
+
+        /* Pieces Styling */
         .piece { 
-            width: 22px; height: 22px; border-radius: 50%; border: 2px solid #000; 
-            box-shadow: inset -2px -2px 5px rgba(0,0,0,0.5); z-index: 10;
+            width: 20px; height: 20px; border-radius: 50%; border: 2px solid white;
+            position: absolute; cursor: pointer; transition: transform 0.2s; z-index: 10;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
         }
+        .p-red { background: var(--red); }
+        .p-green { background: var(--green); }
+        .p-yellow { background: var(--yellow); }
+        .p-blue { background: var(--blue); }
 
-        /* Floating Dice Box logic */
+        /* Floating Dice */
         #dice-box { 
-            position: absolute; width: 70px; height: 70px; background: #fff;
-            border: 4px solid #333; border-radius: 12px; font-size: 45px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; transition: all 0.6s ease-in-out; z-index: 100;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.4);
+            position: absolute; width: 65px; height: 65px; background: white; 
+            border-radius: 12px; border: 4px solid #333; display: flex; 
+            justify-content: center; align-items: center; font-size: 40px; 
+            cursor: pointer; transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
-        /* Positions for Auto-Move Dice */
-        .dice-red { top: 60px; left: 60px; border-color: var(--red); }
-        .dice-green { top: 60px; right: 60px; border-color: var(--green); }
-        .dice-yellow { bottom: 60px; right: 60px; border-color: var(--yellow); }
-        .dice-blue { bottom: 60px; left: 60px; border-color: var(--blue); }
+        .pos-red { top: 60px; left: 60px; }
+        .pos-green { top: 60px; right: 60px; }
+        .pos-yellow { bottom: 60px; right: 60px; }
+        .pos-blue { bottom: 60px; left: 60px; }
 
-        #turn-text { color: white; margin-bottom: 15px; font-size: 20px; font-weight: bold; }
+        #msg { color: white; margin-bottom: 15px; font-weight: bold; font-size: 20px; }
     </style>
 </head>
 <body>
 
-<div id="main-wrapper">
-    <div id="turn-text">RED'S TURN</div>
-    
+    <div id="msg">RED'S TURN</div>
+
     <div id="ludo-board">
         </div>
 
-    <div id="dice-box" class="dice-red" onclick="handleRoll()">🎲</div>
-</div>
+    <div id="dice-box" class="pos-red" onclick="rollDice()">🎲</div>
 
 <script>
     const board = document.getElementById('ludo-board');
     const dice = document.getElementById('dice-box');
-    const status = document.getElementById('turn-text');
+    const msg = document.getElementById('msg');
     
-    const players = ['RED', 'GREEN', 'YELLOW', 'BLUE'];
-    const diceClasses = ['dice-red', 'dice-green', 'dice-yellow', 'dice-blue'];
-    let currentTurn = 0;
+    let turn = 0;
+    const colors = ['red', 'green', 'yellow', 'blue'];
+    const diceClasses = ['pos-red', 'pos-green', 'pos-yellow', 'pos-blue'];
 
-    // Create Board with Exact Colors from Picture
+    // Generate Board Cells
     for (let r = 0; r < 15; r++) {
         for (let c = 0; c < 15; c++) {
             const cell = document.createElement('div');
             cell.className = 'cell';
             
-            // Home Boxes
-            if (r < 6 && c < 6) cell.classList.add('r-zone');
-            else if (r < 6 && c > 8) cell.classList.add('g-zone');
-            else if (r > 8 && c > 8) cell.classList.add('y-zone');
-            else if (r > 8 && c < 6) cell.classList.add('b-zone');
+            // Bases
+            if (r < 6 && c < 6) cell.classList.add('red-base');
+            else if (r < 6 && c > 8) cell.classList.add('green-base');
+            else if (r > 8 && c > 8) cell.classList.add('yellow-base');
+            else if (r > 8 && c < 6) cell.classList.add('blue-base');
             
-            // Paths (Arrows and Home Paths)
-            else if (r === 7 && c > 0 && c < 7) cell.classList.add('r-zone'); // Red path
-            else if (c === 7 && r > 0 && r < 7) cell.classList.add('g-zone'); // Green path
-            else if (r === 7 && c > 7 && c < 14) cell.classList.add('y-zone'); // Yellow path
-            else if (c === 7 && r > 7 && r < 14) cell.classList.add('b-zone'); // Blue path
+            // Paths
+            else if (r === 7 && c > 0 && c < 7) cell.style.background = 'var(--red)';
+            else if (c === 7 && r > 0 && r < 7) cell.style.background = 'var(--green)';
+            else if (r === 7 && c > 7 && c < 14) cell.style.background = 'var(--yellow)';
+            else if (c === 7 && r > 7 && r < 14) cell.style.background = 'var(--blue)';
 
-            // Safe start points (Arrow cells)
-            if((r==6 && c==1) || (r==1 && c==8) || (r==8 && c==13) || (r==13 && c==6)) {
-                cell.style.background = "#ddd"; // Safe color
-                cell.innerText = "⭐";
-            }
-
-            cell.id = `cell-${r}-${c}`;
+            cell.id = `c-${r}-${c}`;
             board.appendChild(cell);
         }
     }
 
-    // Add Pieces in White Boxes (as per pic)
-    function addPiece(r, c, color) {
-        const p = document.createElement('div');
-        p.className = 'piece';
-        p.style.backgroundColor = `var(--${color})`;
-        document.getElementById(`cell-${r}-${c}`).appendChild(p);
+    // Add 4 pieces for each color
+    const pieceSpots = {
+        red: [[1,1], [1,4], [4,1], [4,4]],
+        green: [[1,10], [1,13], [4,10], [4,13]],
+        yellow: [[10,10], [10,13], [13,10], [13,13]],
+        blue: [[10,1], [10,4], [13,1], [13,4]]
+    };
+
+    function initPieces() {
+        colors.forEach(color => {
+            pieceSpots[color].forEach((spot, index) => {
+                const cell = document.getElementById(`c-${spot[0]}-${spot[1]}`);
+                cell.innerHTML = '<div class="piece-spot"></div>';
+                const p = document.createElement('div');
+                p.className = `piece p-${color}`;
+                p.id = `p-${color}-${index}`;
+                p.onclick = () => movePiece(p.id);
+                cell.appendChild(p);
+            });
+        });
     }
 
-    // Placing 4 pieces for each color in their home
-    addPiece(2, 2, 'red'); addPiece(2, 12, 'green'); 
-    addPiece(12, 12, 'yellow'); addPiece(12, 2, 'blue');
-
-    function handleRoll() {
-        dice.style.pointerEvents = "none";
-        let roll = Math.floor(Math.random() * 6) + 1;
+    function rollDice() {
+        let val = Math.floor(Math.random() * 6) + 1;
+        dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][val-1];
         
-        // Rolling effect
-        let i = 0;
-        let rollAnim = setInterval(() => {
-            dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][Math.floor(Math.random()*6)];
-            i++;
-            if(i > 8) {
-                clearInterval(rollAnim);
-                dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][roll-1];
-                switchTurn(roll);
-            }
-        }, 60);
+        // Logic to switch turn if not 6
+        if(val !== 6) {
+            setTimeout(() => {
+                turn = (turn + 1) % 4;
+                dice.className = 'pos-' + colors[turn];
+                msg.innerText = colors[turn].toUpperCase() + "'S TURN";
+                msg.style.color = `var(--${colors[turn]})`;
+            }, 1000);
+        }
     }
 
-    function switchTurn(roll) {
-        setTimeout(() => {
-            if (roll !== 6) {
-                currentTurn = (currentTurn + 1) % 4;
-            }
-            // Auto-move dice box to next player
-            dice.className = diceClasses[currentTurn];
-            status.innerText = players[currentTurn] + "'S TURN";
-            status.style.color = `var(--${players[currentTurn].toLowerCase()})`;
-            dice.style.pointerEvents = "all";
-        }, 1000);
+    function movePiece(id) {
+        // Filhaal click par animation effect add kiya hai
+        const p = document.getElementById(id);
+        p.style.transform = "scale(1.3)";
+        setTimeout(() => p.style.transform = "scale(1)", 200);
     }
+
+    initPieces();
 </script>
 </body>
 </html>
