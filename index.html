@@ -3,50 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real Ludo - 16 Pieces Movement</title>
+    <title>Real Ludo - Smooth Path Movement</title>
     <style>
         :root { --red: #ff0000; --green: #008000; --yellow: #ffff00; --blue: #0000ff; }
-        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: white; }
-        
-        #ludo-board { 
-            width: 420px; height: 420px; background: white; border: 5px solid #333;
-            display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
-            position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5);
-        }
-
+        body { margin: 0; background: #1a1a1a; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; color: white; overflow: hidden; }
+        #ludo-board { width: 420px; height: 420px; background: white; border: 5px solid #333; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); position: relative; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .cell { border: 0.5px solid #ccc; position: relative; display: flex; align-items: center; justify-content: center; }
         .red-base { background: var(--red); } .green-base { background: var(--green); }
         .yellow-base { background: var(--yellow); } .blue-base { background: var(--blue); }
-        
-        /* Piece Styling */
-        .piece { 
-            width: 22px; height: 22px; border-radius: 50%; border: 2px solid white;
-            position: absolute; cursor: pointer; z-index: 10; transition: all 0.2s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
-        }
+        .piece { width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; position: absolute; cursor: pointer; z-index: 100; transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28); box-shadow: 0 4px 8px rgba(0,0,0,0.5); }
         .p-red { background: var(--red); } .p-green { background: var(--green); }
         .p-yellow { background: var(--yellow); } .p-blue { background: var(--blue); }
-
-        /* Dice Box */
-        #dice-box { 
-            position: absolute; width: 65px; height: 65px; background: white; 
-            border-radius: 12px; border: 4px solid #333; display: flex; 
-            justify-content: center; align-items: center; font-size: 40px; 
-            cursor: pointer; z-index: 100; transition: all 0.5s; color: black;
-        }
-
+        #dice-box { position: absolute; width: 65px; height: 65px; background: white; border-radius: 12px; border: 4px solid #333; display: flex; justify-content: center; align-items: center; font-size: 40px; cursor: pointer; z-index: 200; transition: all 0.5s; color: black; }
         .pos-red { top: 60px; left: 60px; } .pos-green { top: 60px; right: 60px; }
         .pos-yellow { bottom: 60px; right: 60px; } .pos-blue { bottom: 60px; left: 60px; }
-        #msg { margin-bottom: 10px; font-weight: bold; font-size: 18px; text-align: center; }
+        #msg { margin-bottom: 10px; font-weight: bold; font-size: 18px; text-align: center; height: 25px; }
     </style>
 </head>
 <body>
-
     <div id="msg">RED'S TURN - ROLL DICE</div>
-
-    <div id="ludo-board">
-        </div>
-
+    <div id="ludo-board"></div>
     <div id="dice-box" class="pos-red" onclick="rollDice()">🎲</div>
 
 <script>
@@ -59,10 +35,17 @@
     let canMove = false;
     const colors = ['red', 'green', 'yellow', 'blue'];
     
-    // Starting coordinates for each color
-    const startPos = { red: [6,1], green: [1,8], yellow: [8,13], blue: [13,6] };
+    // Pura Ludo Path (52 cells)
+    const commonPath = [
+        [6,0],[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],
+        [0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],
+        [7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],
+        [14,7],[14,6],[13,6],[12,6],[11,6],[10,6],[9,6],[8,5],[8,4],[8,3],[8,2],[8,1],[8,0],[7,0]
+    ];
 
-    // 1. Board Generation
+    const startIndexes = { red: 1, green: 14, yellow: 27, blue: 40 };
+
+    // Board Generation
     for (let r = 0; r < 15; r++) {
         for (let c = 0; c < 15; c++) {
             const cell = document.createElement('div');
@@ -76,76 +59,76 @@
         }
     }
 
-    // 2. 16 Pieces Data (4 per color)
     const pieces = [];
-    const baseCoords = {
-        red: [[1,1], [1,4], [4,1], [4,4]],
-        green: [[1,10], [1,13], [4,10], [4,13]],
-        yellow: [[10,10], [10,13], [13,10], [13,13]],
-        blue: [[10,1], [10,4], [13,1], [13,4]]
+    const basePositions = {
+        red: [[1,1],[1,4],[4,1],[4,4]],
+        green: [[1,10],[1,13],[4,10],[4,13]],
+        yellow: [[10,10],[10,13],[13,10],[13,13]],
+        blue: [[10,1],[10,4],[13,1],[13,4]]
     };
 
     function init() {
         colors.forEach(color => {
-            baseCoords[color].forEach((coords, i) => {
-                const pObj = { id: `${color}-${i}`, color: color, status: 'home', home: coords };
+            basePositions[color].forEach((coords, i) => {
+                const pObj = { id: `${color}-${i}`, color: color, status: 'home', pathPos: -1, homeCoords: coords };
                 pieces.push(pObj);
                 const pEl = document.createElement('div');
                 pEl.className = `piece p-${color}`;
                 pEl.id = pObj.id;
-                pEl.onclick = () => handlePieceClick(pObj);
+                pEl.onclick = () => movePiece(pObj);
                 document.getElementById(`c-${coords[0]}-${coords[1]}`).appendChild(pEl);
             });
         });
     }
 
-    // 3. Dice Logic
     function rollDice() {
         if (canMove) return;
         lastRoll = Math.floor(Math.random() * 6) + 1;
         dice.innerText = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][lastRoll-1];
         
         const myPieces = pieces.filter(p => p.color === colors[turn]);
-        const anyOut = myPieces.some(p => p.status === 'out');
+        const playable = myPieces.some(p => (p.status === 'home' && lastRoll === 6) || p.status === 'out');
 
-        if (lastRoll === 6 || anyOut) {
+        if (playable) {
             canMove = true;
-            msg.innerText = `${colors[turn].toUpperCase()}: Got ${lastRoll}! Move your piece.`;
+            msg.innerText = `${colors[turn].toUpperCase()}: Click a piece to move ${lastRoll}!`;
         } else {
-            msg.innerText = `${colors[turn].toUpperCase()}: Got ${lastRoll}. No moves!`;
-            setTimeout(nextTurn, 800);
+            msg.innerText = `No moves for ${colors[turn].toUpperCase()}`;
+            setTimeout(nextTurn, 1000);
         }
     }
 
-    // 4. Movement Logic
-    function handlePieceClick(p) {
+    function movePiece(p) {
         if (!canMove || p.color !== colors[turn]) return;
 
         const el = document.getElementById(p.id);
-
-        // Rule: 6 par bahar nikalna
+        
         if (p.status === 'home' && lastRoll === 6) {
-            const start = startPos[p.color];
-            document.getElementById(`c-${start[0]}-${start[1]}`).appendChild(el);
             p.status = 'out';
-            p.currentCoords = [...start];
-            msg.innerText = "Goti Bahar! 6 par turn dobara.";
-            canMove = false;
+            p.pathPos = 0; // Starting on their first cell
+            updateUIPosition(p);
+            msg.innerText = "Goti Bahar! Roll Again.";
+            canMove = false; // Turn repeats on 6
         } 
-        // Rule: Bahar wali goti ko kisi bhi number par chalana
         else if (p.status === 'out') {
-            // Simple jump movement for demo path
-            // Real path array yahan use kiya ja sakta hai
-            msg.innerText = "Moving " + lastRoll + " steps!";
-            p.currentCoords[1] += 1; // Temporary movement logic
+            p.pathPos += lastRoll;
+            if (p.pathPos >= 52) p.pathPos = 51; // Simple cap for demo
+            updateUIPosition(p);
             
-            // Turn repeat on 6, else next
-            if (lastRoll === 6) {
+            if (lastRoll !== 6) nextTurn();
+            else {
                 canMove = false;
-            } else {
-                nextTurn();
+                msg.innerText = "Got a 6! Roll again.";
             }
         }
+    }
+
+    function updateUIPosition(p) {
+        const el = document.getElementById(p.id);
+        const startIndex = startIndexes[p.color];
+        const actualIndex = (startIndex + p.pathPos) % 52;
+        const coords = commonPath[actualIndex];
+        document.getElementById(`c-${coords[0]}-${coords[1]}`).appendChild(el);
     }
 
     function nextTurn() {
