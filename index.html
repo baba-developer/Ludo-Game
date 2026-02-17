@@ -3,134 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ludo Pro - GitHub Edition</title>
+    <title>Real Ludo - MultiPlayer</title>
     <style>
-        body { font-family: 'Arial', sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #2c3e50; color: white; margin: 0; padding: 20px; }
+        :root { --red: #e74c3c; --green: #2ecc71; --yellow: #f1c40f; --blue: #3498db; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; background-color: #1a1a1a; color: white; margin: 0; padding: 10px; }
         
-        /* Board Design */
-        #game-container { position: relative; width: 350px; height: 350px; background: #ecf0f1; border: 10px solid #34495e; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); }
-        
-        .cell { border: 0.1px solid rgba(0,0,0,0.1); width: 100%; height: 100%; position: relative; }
-        
-        /* Coloring the Board */
-        .safe-zone { background-color: #bdc3c7; }
-        .red-area { background-color: #e74c3c; }
-        .green-area { background-color: #2ecc71; }
-        .blue-area { background-color: #3498db; }
-        .yellow-area { background-color: #f1c40f; }
-
-        /* Goti (Piece) Style */
-        #player-red {
-            width: 80%; height: 80%; background-color: #ff0000; border: 3px solid white;
-            border-radius: 50%; position: absolute; top: 10%; left: 10%;
-            transition: all 0.3s ease; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+        #game-board { 
+            position: relative; width: 360px; height: 360px; background: #fff; 
+            display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr);
+            border: 8px solid #333; box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
 
-        /* Controls */
-        #ui { margin-top: 30px; text-align: center; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px; width: 300px; }
-        #dice-box { font-size: 50px; margin-bottom: 10px; height: 60px; }
-        button { background: #e74c3c; color: white; border: none; padding: 12px 25px; font-size: 18px; border-radius: 5px; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #c0392b; transform: scale(1.05); }
-        button:disabled { background: #7f8c8d; cursor: not-allowed; }
+        .cell { border: 0.1px solid #ddd; position: relative; display: flex; align-items: center; justify-content: center; }
         
-        p { margin: 5px 0; font-size: 14px; color: #bdc3c7; }
+        /* Coloring Zones */
+        .r-zone { background-color: var(--red); }
+        .g-zone { background-color: var(--green); }
+        .y-zone { background-color: var(--yellow); }
+        .b-zone { background-color: var(--blue); }
+        .safe { background-color: #ecf0f1; border: 1px solid #bdc3c7; }
+
+        /* Goti Styles */
+        .piece { 
+            width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; 
+            position: absolute; z-index: 10; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+        .p-red { background: var(--red); }
+        .p-green { background: var(--green); }
+        .p-yellow { background: var(--yellow); }
+        .p-blue { background: var(--blue); }
+
+        /* UI Controls */
+        #controls { margin-top: 20px; text-align: center; background: #333; padding: 15px; border-radius: 10px; width: 330px; }
+        #dice-val { font-size: 45px; margin: 10px 0; }
+        .turn-indicator { padding: 8px; border-radius: 5px; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; }
+        button { background: #fff; color: #000; border: none; padding: 10px 25px; font-size: 18px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: #555; color: #888; }
+        
+        .winner-msg { color: #f1c40f; font-size: 20px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
-    <h1>Ludo Lite</h1>
-    
-    <div id="game-container">
+    <div id="status-bar" class="turn-indicator" style="background: var(--red);">Red's Turn</div>
+
+    <div id="game-board">
         </div>
 
-    <div id="ui">
-        <div id="dice-box">🎲</div>
-        <p id="status">Dice Roll Karein!</p>
-        <button id="roll-btn" onclick="playTurn()">Roll Dice</button>
+    <div id="controls">
+        <div id="dice-val">🎲</div>
+        <button id="roll-btn" onclick="rollDice()">Roll Dice</button>
+        <div id="winner" class="winner-msg">WINNER!</div>
     </div>
 
     <script>
-        const container = document.getElementById('game-container');
-        const statusText = document.getElementById('status');
-        const rollBtn = document.getElementById('roll-btn');
-        
-        // Simplified Path for Demo (15x15 grid logic)
-        // Red start path coordinates
-        const path = [
-            [6,1], [6,2], [6,3], [6,4], [6,5], [5,6], [4,6], [3,6], [2,6], [1,6], [0,6],
-            [0,7], [0,8], [1,8], [2,8], [3,8], [4,8], [5,8], [6,9], [6,10], [6,11], [6,12], [6,13], [6,14],
-            [7,14], [8,14], [8,13], [8,12], [8,11], [8,10], [8,9], [9,8], [10,8], [11,8], [12,8], [13,8], [14,8],
-            [14,7], [14,6], [13,6], [12,6], [11,6], [10,6], [9,6], [8,5], [8,4], [8,3], [8,2], [8,1], [8,0], [7,0]
-        ];
+        const board = document.getElementById('game-board');
+        const status = document.getElementById('status-bar');
+        const colors = ['red', 'green', 'yellow', 'blue'];
+        const colorCodes = ['#e74c3c', '#2ecc71', '#f1c40f', '#3498db'];
+        let turn = 0; // 0:Red, 1:Green, 2:Yellow, 3:Blue
+        let diceValue = 0;
+        let canRoll = true;
 
-        let currentPos = -1; // -1 matlab ghar ke andar
+        // Simplified Path Logic for 4 players
+        const paths = {
+            red: [[6,1],[6,2],[6,3],[6,4],[6,5],[5,6],[4,6],[3,6],[2,6],[1,6],[0,6],[0,7],[0,8],[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[7,13],[7,12],[7,11],[7,10],[7,9]],
+            green: [[1,8],[2,8],[3,8],[4,8],[5,8],[6,9],[6,10],[6,11],[6,12],[6,13],[6,14],[7,14],[8,14],[8,13],[8,12],[8,11],[8,10],[8,9],[9,8],[10,8],[11,8],[12,8],[13,8],[14,8],[14,7],[13,7],[12,7],[11,7],[10,7],[9,7]],
+            // Paths simplified for demo; full 52-cell logic can be added
+        };
 
-        // Board Generate Karo
-        for (let i = 0; i < 225; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            const r = Math.floor(i / 15);
-            const c = i % 15;
-            
-            // Basic Coloring Logic
-            if (r < 6 && c < 6) cell.classList.add('red-area');
-            else if (r < 6 && c > 8) cell.classList.add('green-area');
-            else if (r > 8 && c < 6) cell.classList.add('blue-area');
-            else if (r > 8 && c > 8) cell.classList.add('yellow-area');
-            else if (r === 7 || c === 7) cell.classList.add('safe-zone');
-            
-            cell.id = `cell-${r}-${c}`;
-            container.appendChild(cell);
+        const players = {
+            red: { pos: -1, start: [2,2], class: 'p-red' },
+            green: { pos: -1, start: [2,12], class: 'p-green' },
+            yellow: { pos: -1, start: [12,12], class: 'p-yellow' },
+            blue: { pos: -1, start: [12,2], class: 'p-blue' }
+        };
+
+        // Create Board
+        for (let r = 0; r < 15; r++) {
+            for (let c = 0; c < 15; c++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if ((r < 6 && c < 6)) cell.classList.add('r-zone');
+                else if ((r < 6 && c > 8)) cell.classList.add('g-zone');
+                else if ((r > 8 && c > 8)) cell.classList.add('y-zone');
+                else if ((r > 8 && c < 6)) cell.classList.add('b-zone');
+                else cell.classList.add('safe');
+                cell.id = `c-${r}-${c}`;
+                board.appendChild(cell);
+            }
         }
 
-        // Add Piece
-        const piece = document.createElement('div');
-        piece.id = 'player-red';
-        document.getElementById('cell-2-2').appendChild(piece);
-
-        function playTurn() {
-            rollBtn.disabled = true;
-            const roll = Math.floor(Math.random() * 6) + 1;
-            document.getElementById('dice-box').innerText = getDiceEmoji(roll);
-            
-            setTimeout(() => {
-                movePiece(roll);
-            }, 500);
+        // Initialize Pieces
+        function initGame() {
+            Object.keys(players).forEach(color => {
+                const p = players[color];
+                const piece = document.createElement('div');
+                piece.className = `piece ${p.class}`;
+                piece.id = `piece-${color}`;
+                document.getElementById(`c-${p.start[0]}-${p.start[1]}`).appendChild(piece);
+            });
         }
 
-        function movePiece(steps) {
-            if (currentPos === -1) {
-                if (steps === 6) {
-                    currentPos = 0;
-                    statusText.innerText = "Goti Bahar Aa Gayi!";
-                } else {
-                    statusText.innerText = "6 Chahiye Bahar Aane Ke Liye";
+        function rollDice() {
+            if (!canRoll) return;
+            diceValue = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('dice-val').innerText = getDiceEmoji(diceValue);
+            canRoll = false;
+            
+            setTimeout(() => moveLogic(), 400);
+        }
+
+        function moveLogic() {
+            let color = colors[turn];
+            let p = players[color];
+
+            if (p.pos === -1) {
+                if (diceValue === 6) {
+                    p.pos = 0;
+                    updatePiece(color);
                 }
             } else {
-                currentPos += steps;
-                if (currentPos >= path.length) currentPos = path.length - 1;
-                statusText.innerText = "Goti Move Kar Rahi Hai...";
+                p.pos += diceValue;
+                if (p.pos >= 30) p.pos = 29; // Cap for demo
+                updatePiece(color);
             }
 
-            updateUI();
+            // Next Turn
+            if (diceValue !== 6) {
+                turn = (turn + 1) % 4;
+            }
             
-            setTimeout(() => {
-                rollBtn.disabled = false;
-                statusText.innerText = "Agli Baari!";
-            }, 600);
+            status.innerText = `${colors[turn].toUpperCase()}'s Turn`;
+            status.style.background = colorCodes[turn];
+            canRoll = true;
         }
 
-        function updateUI() {
-            if (currentPos >= 0) {
-                const coords = path[currentPos];
-                const targetCell = document.getElementById(`cell-${coords[0]}-${coords[1]}`);
-                targetCell.appendChild(piece);
+        function updatePiece(color) {
+            const p = players[color];
+            const piece = document.getElementById(`piece-${color}`);
+            let coords = p.pos === -1 ? p.start : (paths[color] ? paths[color][p.pos] : p.start);
+            
+            if (coords) {
+                document.getElementById(`c-${coords[0]}-${coords[1]}`).appendChild(piece);
             }
         }
 
         function getDiceEmoji(n) {
             return ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][n-1];
         }
+
+        initGame();
     </script>
 </body>
 </html>
