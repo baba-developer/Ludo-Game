@@ -12,7 +12,7 @@
             overflow: hidden; touch-action: none;
         }
 
-        /* 1. Updated Splash with Loading Circle */
+        /* Splash & Loader */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
@@ -21,49 +21,49 @@
         .loader-circle {
             width: 50px; height: 50px;
             border: 5px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: #fff;
-            animation: spin 1s ease-in-out infinite;
-            margin-top: 20px;
+            border-radius: 50%; border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite; margin-top: 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Menus & Grid Styles (Same as before) */
-        #main-menu {
+        /* Main UI */
+        #main-menu, #level-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 8000;
         }
 
-        #level-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #16213e; display: none; flex-direction: column;
-            align-items: center; z-index: 9000; padding: 20px 0;
-        }
-        .level-scroll-box {
-            width: 90%; max-height: 70vh; overflow-y: auto;
-            margin-top: 20px; border-radius: 15px; background: rgba(0,0,0,0.2);
-            padding: 15px; border: 1px solid #4e31aa;
-        }
-        .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .level-btn { aspect-ratio: 1/1; background: #e94560; color: white; border-radius: 12px; font-weight: bold; border: none; font-size: 16px; box-shadow: 0 3px #950101; cursor: pointer; }
-        .level-btn.locked { background: #444; opacity: 0.5; box-shadow: none; cursor: default; }
-
-        #settings-modal {
+        /* Modals (Settings & Win) */
+        #settings-modal, #win-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 80%; max-width: 300px; background: #0f3460; border: 3px solid #e94560;
-            border-radius: 20px; padding: 20px; color: white; display: none;
-            flex-direction: column; align-items: center; z-index: 9500;
+            width: 85%; max-width: 320px; background: #0f3460; border: 4px solid #e94560;
+            border-radius: 25px; padding: 25px; color: white; display: none;
+            flex-direction: column; align-items: center; z-index: 9500; text-align: center;
         }
 
-        .btn { width: 180px; padding: 12px; margin: 8px; border: none; border-radius: 50px; background: #e94560; color: white; font-size: 16px; font-weight: bold; box-shadow: 0 4px #950101; cursor: pointer; }
+        .btn { 
+            width: 180px; padding: 12px; margin: 8px; border: none; border-radius: 50px; 
+            background: #e94560; color: white; font-size: 16px; font-weight: bold; 
+            box-shadow: 0 4px #950101; cursor: pointer; 
+        }
 
+        /* Game Board */
         #game-ui { display: none; text-align: center; color: white; width: 100%; max-width: 360px; }
-        .top-bar { display: flex; justify-content: space-between; padding: 10px; width: 95%; margin: auto; }
-        .mini-btn { background: #4e31aa; border: none; color: white; padding: 5px 12px; border-radius: 5px; font-weight: bold;}
-        .info-panel { background: #0f3460; padding: 10px; border-radius: 15px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 10px; border: 1px solid #e94560; }
-        #grid { display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; }
+        .info-panel { 
+            background: #0f3460; padding: 10px; border-radius: 15px; 
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; 
+            margin: 10px; border: 1px solid #e94560; 
+        }
+        #grid { 
+            display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
+            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; 
+        }
         .candy { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fff; touch-action: none; }
+        
+        .level-scroll-box { width: 90%; max-height: 70vh; overflow-y: auto; margin-top: 20px; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 15px; border: 1px solid #4e31aa; }
+        .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+        .level-btn { aspect-ratio: 1/1; background: #e94560; color: white; border-radius: 12px; font-weight: bold; border: none; font-size: 16px; box-shadow: 0 3px #950101; }
+        .level-btn.locked { background: #444; opacity: 0.5; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -82,8 +82,15 @@
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
     </div>
 
+    <div id="win-modal">
+        <h1 style="color: #f9d342; font-size: 32px; margin: 0;">EXCELLENT!</h1>
+        <p id="win-msg" style="font-size: 18px; margin: 15px 0;">Level Complete</p>
+        <button class="btn" id="nextLvlBtn" onclick="nextLevelAction()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">NEXT LEVEL</button>
+        <button class="btn" onclick="closeWinModal()" style="background:#555; box-shadow: 0 4px #333;">BACK TO MENU</button>
+    </div>
+
     <div id="settings-modal">
-        <h2 id="modal-title">SETTINGS</h2>
+        <h2>SETTINGS</h2>
         <button class="btn" id="soundBtn" onclick="toggleSound()" style="background:#f39c12; box-shadow: 0 4px #d68910;">SOUND: ON</button>
         <button class="btn" onclick="resetProgress()" style="font-size: 12px; background:#444;">RESET ALL DATA</button>
         <button class="btn" onclick="toggleSettings(false)">CLOSE</button>
@@ -94,13 +101,13 @@
         <div class="level-scroll-box">
             <div class="level-grid" id="levelContainer"></div>
         </div>
-        <button class="btn" style="background:#555; margin-top:20px;" onclick="hideLevelMenu()">BACK TO MENU</button>
+        <button class="btn" style="background:#555; margin-top:20px;" onclick="hideLevelMenu()">BACK</button>
     </div>
 
     <div id="game-ui">
-        <div class="top-bar">
-            <button class="mini-btn" onclick="pauseGame()">PAUSE</button>
-            <button class="mini-btn" onclick="restartLevel()">RESTART</button>
+        <div style="display: flex; justify-content: space-between; padding: 10px; width: 95%;">
+            <button onclick="pauseGame()" style="background:#4e31aa; border:none; color:white; padding:5px 12px; border-radius:5px;">PAUSE</button>
+            <button onclick="restartLevel()" style="background:#4e31aa; border:none; color:white; padding:5px 12px; border-radius:5px;">RESTART</button>
         </div>
         <div class="info-panel">
             <div>LVL: <b id="lvlShow">1</b></div>
@@ -121,7 +128,7 @@
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type) {
-            if(!soundEnabled) return; // Sound feature check
+            if(!soundEnabled) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
@@ -130,31 +137,45 @@
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         }
 
-        // Setting Sound Toggle
+        window.onload = () => {
+            document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+            setTimeout(() => {
+                document.getElementById('splash').style.display = 'none';
+                document.getElementById('main-menu').style.display = 'flex';
+            }, 2000);
+        };
+
         function toggleSound() {
             soundEnabled = !soundEnabled;
             localStorage.setItem('fb_sound', soundEnabled);
             document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
         }
 
-        window.onload = () => {
-            document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-            setTimeout(() => {
-                document.getElementById('splash').style.display = 'none';
-                document.getElementById('main-menu').style.display = 'flex';
-            }, 2500);
-        };
-
         function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
         function pauseGame() { isGameActive = false; document.getElementById('modal-title').innerText = "PAUSED"; toggleSettings(true); }
         function restartLevel() { toggleSettings(false); startLevel(currentLvl); }
         function playLastUnlocked() { startLevel(unlockedLevel); }
 
+        function showWinModal() {
+            isGameActive = false;
+            document.getElementById('win-modal').style.display = 'flex';
+            document.getElementById('win-msg').innerText = `You scored ${score} points!`;
+            // Agar ye aakhri level tha (e.g. 50), to next button chhupa do
+            document.getElementById('nextLvlBtn').style.display = currentLvl >= 50 ? 'none' : 'block';
+        }
+
+        function nextLevelAction() {
+            document.getElementById('win-modal').style.display = 'none';
+            startLevel(currentLvl + 1);
+        }
+
+        function closeWinModal() {
+            document.getElementById('win-modal').style.display = 'none';
+            backToMenu();
+        }
+
         function resetProgress() {
-            if(confirm("Reset everything? Level 1 se start hoga.")) { 
-                localStorage.setItem('fb_unlocked', 1); 
-                location.reload(); 
-            }
+            if(confirm("Everything will be reset!")) { localStorage.setItem('fb_unlocked', 1); location.reload(); }
         }
 
         function showLevelMenu() {
@@ -164,8 +185,7 @@
             container.innerHTML = '';
             for(let i=1; i<=50; i++) {
                 const b = document.createElement('button');
-                b.innerText = i;
-                b.className = 'level-btn' + (i > unlockedLevel ? ' locked' : '');
+                b.innerText = i; b.className = 'level-btn' + (i > unlockedLevel ? ' locked' : '');
                 b.onclick = i <= unlockedLevel ? () => startLevel(i) : null;
                 container.appendChild(b);
             }
@@ -240,7 +260,6 @@
             if (adj.includes(id2)) {
                 let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-
                 if (checkMatches()) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
@@ -263,16 +282,15 @@
                 }
             }
             if(matched) { document.getElementById('scoreShow').innerText = score; playSound(600, 'triangle'); }
-            
             for(let i=0; i<56; i++) { if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') { candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = ''; } }
             for(let i=0; i<64; i++) { if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)]; }
 
             if(score >= target) {
-                isGameActive = false;
-                alert("LEVEL COMPLETE!");
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
-                backToMenu();
-            } else if(moves <= 0) { isGameActive = false; alert("GAME OVER!"); backToMenu(); }
+                showWinModal(); // Alert ki jagah Modal
+            } else if(moves <= 0) {
+                isGameActive = false; alert("GAME OVER!"); backToMenu();
+            }
         }, 200);
 
         function backToMenu() {
