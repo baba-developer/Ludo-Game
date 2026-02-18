@@ -1,127 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dr. Driving Fix</title>
+    <title>Candy Crush Clone</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: sans-serif; touch-action: none; }
-        #game-wrap { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
-        canvas { width: 100%; height: 65vh; background: #87ceeb; display: block; }
-        #controls { height: 35vh; background: #1a1a1a; border-top: 5px solid #333; display: flex; justify-content: space-around; align-items: center; padding: 10px; }
-        .pedal { width: 70px; height: 110px; background: #333; border-radius: 8px; border: 3px solid #555; color: white; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; }
-        #steering-box { width: 140px; height: 140px; }
-        #wheel-img { width: 100%; height: 100%; border: 12px solid #333; border-radius: 50%; background: #444; position: relative; transition: transform 0.1s; }
-        #wheel-img::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 10px; background: #222; transform: translateY(-50%); }
-        #stats { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-weight: bold; font-size: 20px; z-index: 100; }
+        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f0f0; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; }
+        #header { margin-bottom: 10px; text-align: center; }
+        .score-board { font-size: 24px; font-weight: bold; color: #ff3f81; }
+        
+        /* Game Board Grid */
+        #grid { 
+            display: grid; 
+            grid-template-columns: repeat(8, 40px); 
+            grid-template-rows: repeat(8, 40px); 
+            gap: 2px; 
+            background: #ccc; 
+            padding: 5px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Candies Style */
+        .candy { 
+            width: 40px; 
+            height: 40px; 
+            border-radius: 5px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 20px; 
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .candy:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
-<div id="game-wrap">
-    <div id="stats">
-        <div><span id="speed">0</span> KM/H</div>
-        <div style="color:#f1c40f">FUEL: <span id="fuel">100</span>%</div>
+    <div id="header">
+        <div class="score-board">SCORE: <span id="score">0</span></div>
+        <p style="font-size: 12px; color: #666;">Drag candies to swap</p>
     </div>
-    <canvas id="roadCanvas"></canvas>
-    <div id="controls">
-        <div class="pedal" id="brakeBtn" style="border-color:#e74c3c">BRAKE</div>
-        <div id="steering-box"><div id="wheel-img"></div></div>
-        <div class="pedal" id="gasBtn" style="border-color:#2ecc71">GAS</div>
-    </div>
-</div>
 
-<script>
-    const canvas = document.getElementById('roadCanvas');
-    const ctx = canvas.getContext('2d');
-    const wheel = document.getElementById('wheel-img');
-    const speedEl = document.getElementById('speed');
+    <div id="grid"></div>
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight * 0.65;
+    <script>
+        const grid = document.getElementById('grid');
+        const scoreDisplay = document.getElementById('score');
+        const width = 8;
+        const candies = [];
+        let score = 0;
 
-    let carX = canvas.width / 2;
-    let steer = 0;
-    let speed = 0;
-    let roadOffset = 0;
-    let isGas = false;
-    let isBrake = false;
+        const candyColors = [
+            '#FF5733', // Red
+            '#33FF57', // Green
+            '#3357FF', // Blue
+            '#F1C40F', // Yellow
+            '#9B59B6', // Purple
+            '#E67E22'  // Orange
+        ];
 
-    // Control Listeners
-    const gasBtn = document.getElementById('gasBtn');
-    const brakeBtn = document.getElementById('brakeBtn');
+        // 1. Board Create Karna
+        function createBoard() {
+            for (let i = 0; i < width * width; i++) {
+                const candy = document.createElement('div');
+                candy.classList.add('candy');
+                candy.setAttribute('draggable', true);
+                candy.setAttribute('id', i);
+                let randomColor = Math.floor(Math.random() * candyColors.length);
+                candy.style.backgroundColor = candyColors[randomColor];
+                grid.appendChild(candy);
+                candies.push(candy);
+            }
+        }
+        createBoard();
 
-    gasBtn.onpointerdown = () => isGas = true;
-    gasBtn.onpointerup = () => isGas = false;
-    brakeBtn.onpointerdown = () => isBrake = true;
-    brakeBtn.onpointerup = () => isBrake = false;
+        // 2. Swapping Logic
+        let colorBeingDragged, colorBeingReplaced;
+        let idBeingDragged, idBeingReplaced;
 
-    // Steering logic (Simple Touch)
-    document.getElementById('steering-box').onpointermove = (e) => {
-        let rect = e.target.getBoundingClientRect();
-        let x = e.clientX - (rect.left + rect.width / 2);
-        steer = x / 1.5;
-        if(steer > 45) steer = 45;
-        if(steer < -45) steer = -45;
-        wheel.style.transform = `rotate(${steer * 2}deg)`;
-    };
-    document.onpointerup = () => { steer = 0; wheel.style.transform = `rotate(0deg)`; isGas = false; isBrake = false; };
+        candies.forEach(candy => candy.addEventListener('touchstart', dragStart));
+        candies.forEach(candy => candy.addEventListener('touchend', dragEnd));
+        candies.forEach(candy => candy.addEventListener('touchmove', e => {
+            let touch = e.touches[0];
+            let target = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (target && target.classList.contains('candy')) {
+                idBeingReplaced = parseInt(target.id);
+                colorBeingReplaced = target.style.backgroundColor;
+            }
+        }));
 
-    // Buildings for City Look
-    let buildings = [];
-    for(let i=0; i<6; i++) {
-        buildings.push({ x: i%2==0 ? 20 : canvas.width-70, y: i*150, h: 100+Math.random()*150, color: '#34495e' });
-    }
+        function dragStart() {
+            colorBeingDragged = this.style.backgroundColor;
+            idBeingDragged = parseInt(this.id);
+        }
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function dragEnd() {
+            let validMoves = [
+                idBeingDragged - 1,
+                idBeingDragged - width,
+                idBeingDragged + 1,
+                idBeingDragged + width
+            ];
 
-        // Sky & Ground
-        ctx.fillStyle = "#87ceeb"; ctx.fillRect(0, 0, canvas.width, canvas.height/2);
-        ctx.fillStyle = "#2ecc71"; ctx.fillRect(0, canvas.height/2, canvas.width, canvas.height/2);
+            let validMove = validMoves.includes(idBeingReplaced);
 
-        // Road
-        ctx.fillStyle = "#444";
-        ctx.beginPath();
-        ctx.moveTo(canvas.width*0.4, canvas.height/2);
-        ctx.lineTo(canvas.width*0.6, canvas.height/2);
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.lineTo(0, canvas.height);
-        ctx.fill();
+            if (idBeingReplaced && validMove) {
+                candies[idBeingReplaced].style.backgroundColor = colorBeingDragged;
+                candies[idBeingDragged].style.backgroundColor = colorBeingReplaced;
+                checkMatches();
+            }
+        }
 
-        // Animated Road Lines
-        roadOffset += speed / 5;
-        ctx.strokeStyle = "white"; ctx.setLineDash([20, 40]);
-        ctx.lineDashOffset = -roadOffset;
-        ctx.beginPath(); ctx.moveTo(canvas.width/2, canvas.height/2); ctx.lineTo(canvas.width/2, canvas.height); ctx.stroke();
+        // 3. Matching Logic (Row and Column)
+        function checkMatches() {
+            // Check for Row of Three
+            for (let i = 0; i < 61; i++) {
+                let rowOfThree = [i, i + 1, i + 2];
+                let decidedColor = candies[i].style.backgroundColor;
+                const isBlank = candies[i].style.backgroundColor === '';
 
-        // Draw Buildings
-        buildings.forEach(b => {
-            ctx.fillStyle = b.color;
-            ctx.fillRect(b.x, b.y, 50, b.h);
-            b.y += speed / 4; // Move buildings with speed
-            if(b.y > canvas.height) b.y = -200; 
-        });
+                const notValid = [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55];
+                if (notValid.includes(i)) continue;
 
-        // Player Car (Rear View)
-        ctx.save();
-        ctx.translate(carX, canvas.height - 100);
-        ctx.rotate(steer * 0.005);
-        ctx.fillStyle = "yellow"; ctx.fillRect(-35, -50, 70, 50); // Body
-        ctx.fillStyle = "black"; ctx.fillRect(-35, -10, 70, 10); // Bumper
-        ctx.fillStyle = "red"; ctx.fillRect(-30, -45, 15, 8); ctx.fillRect(15, -45, 15, 8); // Lights
-        ctx.restore();
+                if (rowOfThree.every(index => candies[index].style.backgroundColor === decidedColor && !isBlank)) {
+                    score += 3;
+                    scoreDisplay.innerHTML = score;
+                    rowOfThree.forEach(index => {
+                        candies[index].style.backgroundColor = '';
+                    });
+                }
+            }
+            // Check for Column of Three
+            for (let i = 0; i < 47; i++) {
+                let columnOfThree = [i, i + width, i + width * 2];
+                let decidedColor = candies[i].style.backgroundColor;
+                const isBlank = candies[i].style.backgroundColor === '';
 
-        // Physics
-        if(isGas && speed < 140) speed += 0.8;
-        else if(isBrake && speed > 0) speed -= 1.5;
-        else if(speed > 0) speed -= 0.2; // Friction
+                if (columnOfThree.every(index => candies[index].style.backgroundColor === decidedColor && !isBlank)) {
+                    score += 3;
+                    scoreDisplay.innerHTML = score;
+                    columnOfThree.forEach(index => {
+                        candies[index].style.backgroundColor = '';
+                    });
+                }
+            }
+            fillEmpty();
+        }
 
-        carX += (steer * (speed/150));
-        speedEl.innerText = Math.floor(speed);
+        // 4. Candies ko niche girana aur naye candies lana
+        function fillEmpty() {
+            for (let i = 0; i < 55; i++) {
+                if (candies[i + width].style.backgroundColor === '') {
+                    candies[i + width].style.backgroundColor = candies[i].style.backgroundColor;
+                    candies[i].style.backgroundColor = '';
+                }
+                const firstRow = [0, 1, 2, 3, 4, 5, 6, 7];
+                const isFirstRow = firstRow.includes(i);
+                if (isFirstRow && candies[i].style.backgroundColor === '') {
+                    let randomColor = Math.floor(Math.random() * candyColors.length);
+                    candies[i].style.backgroundColor = candyColors[randomColor];
+                }
+            }
+        }
 
-        requestAnimationFrame(draw);
-    }
-    draw();
-</script>
+        window.setInterval(function(){
+            checkMatches();
+        }, 100);
+
+    </script>
 </body>
 </html>
