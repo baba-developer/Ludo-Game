@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Pro</title>
+    <title>Frutix Blast - Level Fix</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,26 +12,40 @@
             overflow: hidden; touch-action: none;
         }
 
-        /* Splash */
+        /* Splash & Menus */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
-        .loader {
-            border: 6px solid rgba(255,255,255,0.2); border-top: 6px solid #fff;
-            border-radius: 50%; width: 50px; height: 50px;
-            animation: spin 1s linear infinite; margin-top: 20px;
-        }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        /* Menus */
-        #main-menu, #level-menu {
+        #main-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 8000;
         }
 
+        /* Level Menu - SCROLLABLE */
+        #level-menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #16213e; display: none; flex-direction: column;
+            align-items: center; z-index: 9000; padding: 20px 0;
+        }
+        .level-scroll-box {
+            width: 90%; max-height: 70vh; overflow-y: auto; /* Scroll enabled here */
+            margin-top: 20px; border-radius: 15px; background: rgba(0,0,0,0.2);
+            padding: 15px; border: 1px solid #4e31aa;
+        }
+        .level-grid { 
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; 
+        }
+        .level-btn { 
+            aspect-ratio: 1/1; background: #e94560; color: white; 
+            border-radius: 12px; font-weight: bold; border: none; font-size: 16px;
+            box-shadow: 0 3px #950101; cursor: pointer;
+        }
+        .level-btn.locked { background: #444; opacity: 0.5; box-shadow: none; cursor: default; }
+
+        /* Settings */
         #settings-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 80%; max-width: 300px; background: #0f3460; border: 3px solid #e94560;
@@ -47,27 +61,18 @@
 
         /* Game UI */
         #game-ui { display: none; text-align: center; color: white; width: 100%; max-width: 360px; }
-        .top-bar { display: flex; justify-content: space-between; padding: 10px; width: 90%; }
-        .mini-btn { background: #4e31aa; border: none; color: white; padding: 5px 10px; border-radius: 5px; }
-
+        .top-bar { display: flex; justify-content: space-between; padding: 10px; width: 95%; margin: auto; }
+        .mini-btn { background: #4e31aa; border: none; color: white; padding: 5px 12px; border-radius: 5px; font-weight: bold;}
+        
         .info-panel {
             background: #0f3460; padding: 10px; border-radius: 15px;
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 10px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 10px; border: 1px solid #e94560;
         }
         #grid { 
             display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
-            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px;
-            margin: auto;
+            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto;
         }
-        .candy { 
-            width: 40px; height: 40px; border-radius: 8px; 
-            display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; background: #fff; touch-action: none;
-        }
-
-        .level-grid { display: grid; grid-template-columns: repeat(5, 55px); gap: 10px; padding: 20px; }
-        .level-btn { width: 55px; height: 55px; background: #e94560; color: white; border-radius: 12px; font-weight: bold; border: none; }
-        .level-btn.locked { background: #444; opacity: 0.5; }
+        .candy { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fff; touch-action: none; }
     </style>
 </head>
 <body>
@@ -75,26 +80,28 @@
     <div id="splash">
         <h1>Frutix Blast</h1>
         <div class="loader"></div>
-        <p>PREPARING FRUITS...</p>
+        <p>LOADING LEVELS...</p>
     </div>
 
     <div id="main-menu">
-        <h1 style="color: #e94560; font-size: 40px;">MENU</h1>
-        <button class="btn" onclick="startLevel(unlockedLevel)">PLAY NOW</button>
+        <h1 style="color: #e94560; font-size: 45px;">FRUTIX</h1>
+        <button class="btn" onclick="playLastUnlocked()">CONTINUE</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
     </div>
 
     <div id="settings-modal">
         <h2 id="modal-title">SETTINGS</h2>
-        <button class="btn" onclick="resetProgress()">RESET DATA</button>
+        <button class="btn" onclick="resetProgress()">RESET ALL DATA</button>
         <button class="btn" onclick="toggleSettings(false)">CLOSE</button>
     </div>
 
     <div id="level-menu">
-        <h1>SELECT LEVEL</h1>
-        <div class="level-grid" id="levelContainer"></div>
-        <button class="btn" onclick="hideLevelMenu()">BACK</button>
+        <h1 style="color:white; margin-bottom:5px;">LEVELS</h1>
+        <div class="level-scroll-box">
+            <div class="level-grid" id="levelContainer"></div>
+        </div>
+        <button class="btn" style="background:#555; margin-top:20px;" onclick="hideLevelMenu()">BACK TO MENU</button>
     </div>
 
     <div id="game-ui">
@@ -109,16 +116,16 @@
             <div style="color: #f9d342;">MOVES: <b id="movesShow">25</b></div>
         </div>
         <div id="grid"></div>
-        <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">EXIT</button>
+        <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
     </div>
 
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let currentLvl = 1, score = 0, moves = 25, target = 200, candies = [];
-        let isGameActive = false, isPaused = false;
+        let isGameActive = false;
 
-        // Sound Engine
+        // Sounds
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(freq, type) {
             const osc = audioCtx.createOscillator();
@@ -136,28 +143,26 @@
 
         function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
         
-        function pauseGame() {
-            isGameActive = false;
-            document.getElementById('modal-title').innerText = "PAUSED";
-            toggleSettings(true);
-        }
+        function pauseGame() { isGameActive = false; document.getElementById('modal-title').innerText = "PAUSED"; toggleSettings(true); }
+        
+        function restartLevel() { toggleSettings(false); startLevel(currentLvl); }
 
-        function restartLevel() {
-            toggleSettings(false);
-            startLevel(currentLvl);
-        }
+        function playLastUnlocked() { startLevel(unlockedLevel); }
 
         function resetProgress() {
-            if(confirm("Reset all progress?")) { localStorage.setItem('fb_unlocked', 1); location.reload(); }
+            if(confirm("Reset everything?")) { localStorage.setItem('fb_unlocked', 1); location.reload(); }
         }
 
         function showLevelMenu() {
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'flex';
-            const container = document.getElementById('levelContainer'); container.innerHTML = '';
+            const container = document.getElementById('levelContainer');
+            container.innerHTML = '';
+            // Generating 50 levels
             for(let i=1; i<=50; i++) {
                 const b = document.createElement('button');
-                b.innerText = i; b.className = 'level-btn' + (i > unlockedLevel ? ' locked' : '');
+                b.innerText = i;
+                b.className = 'level-btn' + (i > unlockedLevel ? ' locked' : '');
                 b.onclick = i <= unlockedLevel ? () => startLevel(i) : null;
                 container.appendChild(b);
             }
@@ -170,7 +175,7 @@
 
         function startLevel(lvl) {
             currentLvl = lvl; score = 0; target = 200 + (lvl*50); moves = 25;
-            isGameActive = true; isPaused = false;
+            isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
@@ -202,12 +207,11 @@
         }
 
         function checkMatches() {
-            let hasMatch = false;
             for(let i=0; i<64; i++) {
-                if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) hasMatch = true;
-                if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) hasMatch = true;
+                if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) return true;
+                if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) return true;
             }
-            return hasMatch;
+            return false;
         }
 
         function addTouchLogic() {
@@ -216,7 +220,6 @@
                 c.onpointerdown = (e) => startID = parseInt(e.target.id);
                 c.onpointerup = (e) => {
                     if (!isGameActive) return;
-                    let touch = e.type.includes('touch') ? e.changedTouches[0] : e;
                     let targetEl = document.elementFromPoint(e.clientX, e.clientY);
                     if (targetEl && targetEl.className === 'candy') {
                         let endID = parseInt(targetEl.id);
@@ -231,25 +234,16 @@
             if (id1 % 8 === 0 && id2 === id1 - 1) return;
             if (id1 % 8 === 7 && id2 === id1 + 1) return;
 
-            if (adj.includes(id2) && moves > 0) {
-                // Swap temporarily
-                let val1 = candies[id1].innerHTML;
-                let val2 = candies[id2].innerHTML;
-                candies[id1].innerHTML = val2;
-                candies[id2].innerHTML = val1;
+            if (adj.includes(id2)) {
+                let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+                candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
 
                 if (checkMatches()) {
-                    // Match found! Confirm move
-                    moves--;
-                    document.getElementById('movesShow').innerText = moves;
+                    moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
                 } else {
-                    // No match! Undo swap
-                    setTimeout(() => {
-                        candies[id1].innerHTML = val1;
-                        candies[id2].innerHTML = val2;
-                        playSound(150, 'sine'); // Wrong move sound
-                    }, 200);
+                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
+                    playSound(150, 'sine');
                 }
             }
         }
@@ -265,24 +259,22 @@
                     score += 10; candies[i].innerHTML = ''; candies[i+8].innerHTML = ''; candies[i+16].innerHTML = ''; matched = true;
                 }
             }
-            if(matched) {
-                document.getElementById('scoreShow').innerText = score;
-                playSound(600, 'triangle');
-            }
+            if(matched) { document.getElementById('scoreShow').innerText = score; playSound(600, 'triangle'); }
+            
+            for(let i=0; i<56; i++) { if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') { candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = ''; } }
+            for(let i=0; i<64; i++) { if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)]; }
 
-            // Gravity
-            for(let i=0; i<56; i++) {
-                if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') {
-                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
+            if(score >= target) {
+                isGameActive = false;
+                alert("LEVEL COMPLETE!");
+                if(currentLvl == unlockedLevel) {
+                    unlockedLevel++;
+                    localStorage.setItem('fb_unlocked', unlockedLevel);
                 }
+                backToMenu();
+            } else if(moves <= 0) {
+                isGameActive = false; alert("GAME OVER!"); backToMenu();
             }
-            // Refill
-            for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            }
-
-            if(score >= target) { alert("WINNER!"); backToMenu(); }
-            else if(moves <= 0) { alert("OUT OF MOVES!"); backToMenu(); }
         }, 200);
 
         function backToMenu() {
