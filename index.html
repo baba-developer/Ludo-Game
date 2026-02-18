@@ -33,6 +33,16 @@
             align-items: center; justify-content: center; z-index: 8000;
         }
 
+        /* Main Menu Developer Tag */
+        .dev-tag-menu {
+            position: absolute;
+            bottom: 30px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
+            letter-spacing: 2px;
+            font-weight: bold;
+        }
+
         /* Modals (Settings & Win) */
         #settings-modal, #win-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -80,6 +90,8 @@
         <button class="btn" onclick="playLastUnlocked()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">CONTINUE</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
+        
+        <div class="dev-tag-menu">POWERED BY BABA-DEVELOPER</div>
     </div>
 
     <div id="win-modal">
@@ -160,7 +172,6 @@
             isGameActive = false;
             document.getElementById('win-modal').style.display = 'flex';
             document.getElementById('win-msg').innerText = `You scored ${score} points!`;
-            // Agar ye aakhri level tha (e.g. 50), to next button chhupa do
             document.getElementById('nextLvlBtn').style.display = currentLvl >= 50 ? 'none' : 'block';
         }
 
@@ -287,7 +298,7 @@
 
             if(score >= target) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
-                showWinModal(); // Alert ki jagah Modal
+                showWinModal();
             } else if(moves <= 0) {
                 isGameActive = false; alert("GAME OVER!"); backToMenu();
             }
