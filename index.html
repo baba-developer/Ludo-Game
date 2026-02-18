@@ -2,152 +2,159 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Dr. Driving Clone</title>
+    <title>Dr. Driving 3D Perspective</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #111; font-family: 'Arial', sans-serif; touch-action: none; }
-        #game-container { position: relative; width: 100vw; height: 100vh; background: #2c3e50; }
-        canvas { width: 100%; height: 100%; display: block; }
+        body { margin: 0; overflow: hidden; background: #87ceeb; font-family: sans-serif; touch-action: none; }
+        #game-wrap { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; }
+        
+        /* Game Screen */
+        canvas { width: 100%; height: 65vh; background: #222; display: block; }
 
-        /* Dr. Driving Style Dashboard */
-        #dashboard {
-            position: absolute; bottom: 0; width: 100%; height: 180px;
-            background: linear-gradient(to top, #111, #333);
-            border-top: 4px solid #555; display: flex; justify-content: space-around; align-items: center;
+        /* Dashboard Area */
+        #controls { 
+            height: 35vh; background: #1a1a1a; border-top: 5px solid #333;
+            display: flex; justify-content: space-around; align-items: center; padding: 10px;
         }
 
-        /* Steering Wheel */
-        #steering-container { width: 140px; height: 140px; position: relative; }
-        #steering-wheel {
+        .pedal { width: 60px; height: 100px; background: #333; border-radius: 5px; border: 2px solid #555; color: white; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; }
+        #gas:active { background: #2ecc71; }
+        #brake:active { background: #e74c3c; }
+
+        #steering-box { width: 150px; height: 150px; position: relative; }
+        #wheel-img { 
             width: 100%; height: 100%; border: 10px solid #444; border-radius: 50%;
-            background: repeating-conic-gradient(#222 0% 25%, #333 0% 50%);
-            transition: transform 0.1s; position: relative;
+            background: linear-gradient(45deg, #222, #444); position: relative;
+            transition: transform 0.1s;
         }
-        #steering-wheel::after { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 10px; background: #444; transform: translateY(-50%); }
+        #wheel-img::before { content: ""; position: absolute; top: 50%; left: 0; width: 100%; height: 10px; background: #444; }
 
-        /* Pedals */
-        .pedal { width: 60px; height: 100px; background: #222; border: 2px solid #555; border-radius: 5px; color: white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 12px; }
-        #gas { background: #111; border-color: #2ecc71; }
-        #brake { background: #111; border-color: #e74c3c; }
-
-        #ui-top { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-around; color: white; font-weight: bold; font-size: 18px; text-shadow: 2px 2px #000; }
+        #stats { position: absolute; top: 10px; width: 100%; display: flex; justify-content: space-between; padding: 0 20px; box-sizing: border-box; color: white; font-weight: bold; font-size: 20px; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="game-container">
-        <div id="ui-top">
-            <div>Score: <span id="scoreVal">0</span></div>
-            <div style="color: #f1c40f;">FUEL: <span id="fuel">100</span>%</div>
-        </div>
-
-        <canvas id="gameCanvas"></canvas>
-
-        <div id="dashboard">
-            <div class="pedal" id="brake">BRAKE</div>
-            
-            <div id="steering-container">
-                <div id="steering-wheel"></div>
-            </div>
-
-            <div class="pedal" id="gas">GAS</div>
-        </div>
+<div id="game-wrap">
+    <div id="stats">
+        <div>KM/H: <span id="speed">0</span></div>
+        <div>FUEL: <span id="fuel">100</span>%</div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const wheel = document.getElementById('steering-wheel');
-        const fuelDisplay = document.getElementById('fuel');
+    <canvas id="roadCanvas"></canvas>
 
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight - 180; // Dashboard space minus
-        }
-        window.addEventListener('resize', resize);
-        resize();
+    <div id="controls">
+        <div class="pedal" id="brake">BRAKE</div>
+        <div id="steering-box"><div id="wheel-img"></div></div>
+        <div class="pedal" id="gas">GAS</div>
+    </div>
+</div>
 
-        let car = { x: canvas.width/2 - 25, y: canvas.height - 120, w: 50, h: 90, speedX: 0, angle: 0 };
-        let enemies = [];
-        let score = 0;
-        let fuel = 100;
-        let isMoving = false;
+<script>
+    const canvas = document.getElementById('roadCanvas');
+    const ctx = canvas.getContext('2d');
+    const wheel = document.getElementById('wheel-img');
+    const speedEl = document.getElementById('speed');
 
-        // Steering Control
-        let steerAngle = 0;
-        document.getElementById('steering-container').addEventListener('touchstart', (e) => isMoving = true);
-        document.body.addEventListener('touchmove', (e) => {
-            let touchX = e.touches[0].clientX;
-            let centerX = window.innerWidth / 2;
-            steerAngle = (touchX - centerX) / 2; 
-            if(steerAngle > 45) steerAngle = 45;
-            if(steerAngle < -45) steerAngle = -45;
-            wheel.style.transform = `rotate(${steerAngle * 2}deg)`;
-        });
-        document.body.addEventListener('touchend', () => {
-            steerAngle = 0;
-            wheel.style.transform = `rotate(0deg)`;
-        });
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight * 0.65;
 
-        function draw3DCar(x, y, w, h, color, angle) {
-            ctx.save();
-            ctx.translate(x + w/2, y + h/2);
-            ctx.rotate(angle * Math.PI / 180);
-            
-            // 3D Shadow
-            ctx.fillStyle = "rgba(0,0,0,0.3)";
-            ctx.fillRect(-w/2 + 5, -h/2 + 5, w, h);
-            
-            // Body
-            ctx.fillStyle = color;
-            ctx.beginPath(); ctx.roundRect(-w/2, -h/2, w, h, 10); ctx.fill();
-            
-            // Roof
-            ctx.fillStyle = "rgba(255,255,255,0.2)";
-            ctx.fillRect(-w/2 + 10, -h/2 + 15, w - 20, 20);
-            
-            ctx.restore();
-        }
+    let carX = canvas.width / 2;
+    let steer = 0;
+    let speed = 0;
+    let fuel = 100;
+    let roadOffset = 0;
+    let enemies = [];
 
-        function update() {
-            // Movement Logic
-            car.x += steerAngle * 0.15;
-            if(car.x < 10) car.x = 10;
-            if(car.x > canvas.width - 60) car.x = canvas.width - 60;
+    // Touch Controls for Steering
+    document.getElementById('steering-box').ontouchmove = (e) => {
+        let touch = e.touches[0];
+        let rect = e.target.getBoundingClientRect();
+        let centerX = rect.left + rect.width / 2;
+        steer = (touch.clientX - centerX) / 2;
+        if(steer > 40) steer = 40;
+        if(steer < -40) steer = -40;
+        wheel.style.transform = `rotate(${steer * 3}deg)`;
+    };
+    document.ontouchend = () => { steer = 0; wheel.style.transform = `rotate(0deg)`; };
 
-            // Fuel Logic
-            fuel -= 0.02;
-            fuelDisplay.innerText = Math.floor(fuel);
-            if(fuel <= 0) { alert("Fuel Out! Score: " + score); location.reload(); }
+    // Gas/Brake logic
+    let isGas = false;
+    document.getElementById('gas').ontouchstart = () => isGas = true;
+    document.getElementById('gas').ontouchend = () => isGas = false;
 
-            // Enemies
-            if (Math.random() < 0.02 && enemies.length < 4) {
-                enemies.push({ x: Math.random()*(canvas.width-50), y: -100, speed: 4 + (score/15) });
-            }
+    function drawRoad() {
+        // Sky
+        ctx.fillStyle = "#87ceeb";
+        ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
 
-            enemies.forEach((enemy, i) => {
-                enemy.y += enemy.speed;
-                if (car.x < enemy.x + 45 && car.x + 45 > enemy.x && car.y < enemy.y + 80 && car.y + 80 > enemy.y) {
-                    alert("Crashed! Score: " + score); location.reload();
-                }
-                if (enemy.y > canvas.height) { enemies.splice(i, 1); score++; document.getElementById('scoreVal').innerText = score; }
-            });
-        }
+        // Ground/Grass
+        ctx.fillStyle = "#2ecc71";
+        ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
 
-        function draw() {
-            // Road
-            ctx.fillStyle = "#34495e"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.setLineDash([30, 30]);
-            for(let i=1; i<4; i++) {
-                ctx.beginPath(); ctx.moveTo(i * (canvas.width/4), 0); ctx.lineTo(i * (canvas.width/4), canvas.height); ctx.stroke();
-            }
+        // 3D Road Projection
+        ctx.fillStyle = "#444";
+        ctx.beginPath();
+        ctx.moveTo(canvas.width * 0.45, canvas.height / 2); // Vanishing point
+        ctx.lineTo(canvas.width * 0.55, canvas.height / 2);
+        ctx.lineTo(canvas.width * 0.9, canvas.height);
+        ctx.lineTo(canvas.width * 0.1, canvas.height);
+        ctx.fill();
 
-            draw3DCar(car.x, car.y, car.w, car.h, "#3498db", steerAngle);
-            enemies.forEach(e => draw3DCar(e.x, e.y, 50, 90, "#e74c3c", 0));
+        // Road Lines (Animated)
+        roadOffset += speed / 5;
+        ctx.strokeStyle = "white";
+        ctx.setLineDash([20, 30]);
+        ctx.lineDashOffset = -roadOffset;
+        ctx.beginPath();
+        ctx.moveTo(canvas.width / 2, canvas.height / 2);
+        ctx.lineTo(canvas.width / 2, canvas.height);
+        ctx.stroke();
+    }
 
-            update();
-            requestAnimationFrame(draw);
-        }
-        draw();
-    </script>
+    function drawPlayerCar() {
+        let w = 80, h = 120;
+        let x = carX - w/2;
+        let y = canvas.height - 140;
+
+        // Perspective Tilt
+        ctx.save();
+        ctx.translate(carX, y + h/2);
+        ctx.rotate(steer * 0.01);
+        
+        // 3D Car Body (Rear View)
+        ctx.fillStyle = "yellow";
+        ctx.fillRect(-w/2, -h/2, w, h-40); // Top
+        ctx.fillStyle = "gold";
+        ctx.fillRect(-w/2, -h/2 + 30, w, 50); // Rear panel
+        
+        // Lights
+        ctx.fillStyle = "red";
+        ctx.fillRect(-w/2 + 5, -h/2 + 40, 15, 10);
+        ctx.fillRect(w/2 - 20, -h/2 + 40, 15, 10);
+        
+        ctx.restore();
+    }
+
+    function update() {
+        if(isGas && speed < 120) speed += 0.5;
+        else if(speed > 0) speed -= 0.3;
+
+        carX += (steer * (speed / 100));
+        speedEl.innerText = Math.floor(speed);
+
+        // Keep car on road
+        if(carX < canvas.width * 0.2) carX = canvas.width * 0.2;
+        if(carX > canvas.width * 0.8) carX = canvas.width * 0.8;
+    }
+
+    function gameLoop() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawRoad();
+        drawPlayerCar();
+        update();
+        requestAnimationFrame(gameLoop);
+    }
+
+    gameLoop();
+</script>
 </body>
 </html>
