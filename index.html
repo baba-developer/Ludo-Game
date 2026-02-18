@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Settings & Loader</title>
+    <title>Frutix Blast - Movement Fixed</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -11,31 +11,27 @@
             justify-content: center; font-family: 'Segoe UI', sans-serif; overflow: hidden; touch-action: none;
         }
 
-        /* 1. Splash Screen & Loading Circle */
+        /* Splash & Loader */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         .loader {
-            border: 6px solid rgba(255,255,255,0.2);
-            border-top: 6px solid #fff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-top: 20px;
+            border: 6px solid rgba(255,255,255,0.2); border-top: 6px solid #fff;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1s linear infinite; margin-top: 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* 2. Main Menu */
-        #main-menu {
+        /* Menus */
+        #main-menu, #level-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 8000;
         }
+        #level-menu { background: #16213e; overflow-y: auto; padding: 40px 0; }
 
-        /* 3. Settings Modal */
         #settings-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 80%; max-width: 300px; background: #0f3460; border: 3px solid #e94560;
@@ -43,7 +39,6 @@
             flex-direction: column; align-items: center; z-index: 9500; text-align: center;
         }
 
-        /* Common Buttons */
         .btn {
             width: 200px; padding: 15px; margin: 10px; border: none; border-radius: 50px;
             background: #e94560; color: white; font-size: 18px; font-weight: bold;
@@ -51,7 +46,7 @@
         }
         .btn:active { transform: scale(0.95); }
 
-        /* Game UI & Grid */
+        /* Game Grid */
         #game-ui { display: none; text-align: center; color: white; }
         .info-panel {
             background: #0f3460; padding: 15px; border-radius: 20px;
@@ -64,15 +59,9 @@
         .candy { 
             width: 42px; height: 42px; border-radius: 10px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 26px; background: #fff;
+            font-size: 26px; background: #fff; touch-action: none; user-select: none;
         }
 
-        /* Levels Menu */
-        #level-menu {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #16213e; display: none; flex-direction: column;
-            align-items: center; z-index: 9000; overflow-y: auto; padding: 40px 0;
-        }
         .level-grid { display: grid; grid-template-columns: repeat(5, 60px); gap: 15px; padding: 20px; }
         .level-btn { width: 60px; height: 60px; background: #e94560; color: white; border-radius: 15px; font-weight: bold; border: none; }
         .level-btn.locked { background: #444; opacity: 0.5; }
@@ -83,7 +72,7 @@
     <div id="splash">
         <h1 style="font-size: 40px;">Frutix Blast</h1>
         <div class="loader"></div>
-        <p style="margin-top: 15px;">LOADING ASSETS...</p>
+        <p style="margin-top: 15px;">POWERED BY BABA-DEVELOPER...</p>
     </div>
 
     <div id="main-menu">
@@ -97,8 +86,7 @@
         <h2>SETTINGS</h2>
         <hr style="width:100%; border:1px solid #e94560;">
         <p>Sound: <b>ON</b></p>
-        <p>Music: <b>ON</b></p>
-        <button class="btn" style="width:150px; background:#555; font-size:14px;" onclick="resetProgress()">RESET ALL DATA</button>
+        <button class="btn" style="width:150px; background:#555; font-size:14px;" onclick="resetProgress()">RESET PROGRESS</button>
         <button class="btn" style="width:150px; margin-top:20px;" onclick="toggleSettings(false)">CLOSE</button>
     </div>
 
@@ -125,21 +113,17 @@
         let currentLvl = 1, score = 0, moves = 20, target = 200, candies = [];
         let isGameActive = false;
 
-        // 1. Splash Logic
         window.onload = () => {
             setTimeout(() => {
                 document.getElementById('splash').style.display = 'none';
                 document.getElementById('main-menu').style.display = 'flex';
-            }, 3000); // 3 seconds loading
+            }, 3000);
         };
 
-        // Settings Toggle
-        function toggleSettings(show) {
-            document.getElementById('settings-modal').style.display = show ? 'flex' : 'none';
-        }
+        function toggleSettings(show) { document.getElementById('settings-modal').style.display = show ? 'flex' : 'none'; }
 
         function resetProgress() {
-            if(confirm("Dhyan se! Kya aap saara progress khatam karna chahte hain?")) {
+            if(confirm("Reset all progress?")) {
                 localStorage.setItem('fb_unlocked', 1);
                 location.reload();
             }
@@ -174,7 +158,7 @@
             document.getElementById('targetShow').innerText = target;
             document.getElementById('movesShow').innerText = moves;
             initGrid();
-            setTimeout(() => { isGameActive = true; }, 500);
+            setTimeout(() => { isGameActive = true; }, 600);
         }
 
         function initGrid() {
@@ -199,16 +183,31 @@
             return false;
         }
 
+        // --- FIXED MOVEMENT LOGIC ---
         function addDrag() {
-            let idD, idR;
+            let idD;
             candies.forEach(c => {
-                c.onpointerdown = e => idD = parseInt(e.target.id);
+                c.onpointerdown = e => {
+                    idD = parseInt(e.target.id);
+                    e.target.releasePointerCapture(e.pointerId); // Allows elementFromPoint to work
+                };
                 c.onpointerup = e => {
-                    const t = document.elementFromPoint(e.clientX, e.clientY);
-                    if(t && t.className === 'candy' && isGameActive) {
-                        idR = parseInt(t.id);
+                    if (!isGameActive) return;
+                    // Move the candy being dragged out of the way to see what's underneath
+                    const currentCandy = candies[idD];
+                    currentCandy.style.pointerEvents = 'none';
+                    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    currentCandy.style.pointerEvents = 'auto';
+
+                    if(targetEl && targetEl.className === 'candy') {
+                        let idR = parseInt(targetEl.id);
                         let adj = [idD-1, idD+1, idD-8, idD+8];
-                        if(adj.includes(idR)) {
+                        
+                        // Prevent wrapping movements on edges
+                        if (idD % 8 === 0 && idR === idD - 1) adj = adj.filter(x => x !== idD-1);
+                        if (idD % 8 === 7 && idR === idD + 1) adj = adj.filter(x => x !== idD+1);
+
+                        if(adj.includes(idR) && moves > 0) {
                             let temp = candies[idD].innerHTML;
                             candies[idD].innerHTML = candies[idR].innerHTML;
                             candies[idR].innerHTML = temp;
@@ -216,7 +215,7 @@
                             document.getElementById('movesShow').innerText = moves;
                         }
                     }
-                }
+                };
             });
         }
 
@@ -235,6 +234,7 @@
                 }
                 if(matched) document.getElementById('scoreShow').innerText = score;
 
+                // Gravity & Refill
                 for(let i=0; i<56; i++) {
                     if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') {
                         candies[i+8].innerHTML = candies[i].innerHTML;
@@ -247,7 +247,7 @@
 
                 if(score >= target) {
                     isGameActive = false;
-                    alert("LEVEL COMPLETE!");
+                    alert("WELL DONE!");
                     if(currentLvl === unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                     backToMenu();
                 } else if(moves <= 0) {
@@ -255,7 +255,7 @@
                     alert("GAME OVER!"); backToMenu();
                 }
             }
-        }, 100);
+        }, 150);
 
         function backToMenu() {
             isGameActive = false;
