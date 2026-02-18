@@ -1,70 +1,31 @@
- <!DOCTYPE html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Racing Game - Full Screen Mobile</title>
+    <title>3D Style Racing Game</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Segoe UI', sans-serif; touch-action: manipulation; }
-        
-        /* Game Container Full Screen */
-        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; background: #2c3e50; }
+        body { margin: 0; overflow: hidden; background: #111; font-family: 'Segoe UI', sans-serif; touch-action: manipulation; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: #222; }
         canvas { width: 100%; height: 100%; display: block; }
-        
-        /* UI Top */
-        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 10px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); box-sizing: border-box; z-index: 10; }
-        .stats { color: white; font-size: 14px; font-weight: bold; }
-        
-        /* Buttons Game Ke Upar (Overlay) */
-        #mobile-controls { 
-            position: absolute; 
-            bottom: 30px; 
-            width: 100%; 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 0 40px; 
-            box-sizing: border-box; 
-            pointer-events: none; /* Taaki canvas click block na ho */
-        }
-        
-        .ctrl-btn { 
-            width: 80px; 
-            height: 80px; 
-            background: rgba(255, 255, 255, 0.2); /* Transparent Buttons */
-            border: 2px solid rgba(255, 255, 255, 0.4); 
-            border-radius: 50%; 
-            color: white; 
-            font-size: 35px; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            pointer-events: auto; /* Buttons click honge */
-            -webkit-user-select: none; 
-            user-select: none; 
-            backdrop-filter: blur(5px);
-        }
-        
-        .ctrl-btn:active { background: rgba(0, 210, 255, 0.5); transform: scale(0.9); }
-        
-        .ui-btn { padding: 5px 10px; font-size: 10px; cursor: pointer; border: none; border-radius: 4px; background: #e74c3c; color: white; font-weight: bold; }
-        #pauseBtn { background: #f1c40f; color: #000; }
-        #shield-timer { position: absolute; top: 60px; width: 100%; text-align: center; color: #ff3f81; font-weight: bold; display: none; font-size: 20px; z-index: 5; }
+        #top-ui { position: absolute; top: 0; left: 0; width: 100%; padding: 12px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.7); box-sizing: border-box; z-index: 10; color: white; }
+        #mobile-controls { position: absolute; bottom: 40px; width: 100%; display: flex; justify-content: space-between; padding: 0 30px; box-sizing: border-box; pointer-events: none; }
+        .ctrl-btn { width: 80px; height: 80px; background: rgba(255, 255, 255, 0.1); border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 50%; color: white; font-size: 35px; display: flex; justify-content: center; align-items: center; pointer-events: auto; backdrop-filter: blur(5px); }
+        .ctrl-btn:active { background: rgba(0, 210, 255, 0.4); }
+        .ui-btn { padding: 6px 12px; font-size: 11px; cursor: pointer; border: none; border-radius: 5px; background: #e74c3c; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div id="game-container">
         <div id="top-ui">
-            <div class="stats">Score: <span id="scoreVal">0</span> | High: <span id="highScore">0</span></div>
-            <div style="display:flex; gap:5px;">
-                <button class="ui-btn" id="pauseBtn" onclick="togglePause()">PAUSE</button>
+            <div>SCORE: <span id="scoreVal">0</span> | BEST: <span id="highScore">0</span></div>
+            <div>
+                <button class="ui-btn" onclick="togglePause()">PAUSE</button>
                 <button class="ui-btn" onclick="resetGame()">RESET</button>
             </div>
         </div>
-        
-        <div id="shield-timer">🛡️ SHIELD: <span id="timer">5</span>s</div>
-        
         <canvas id="gameCanvas"></canvas>
-
         <div id="mobile-controls">
             <button class="ctrl-btn" id="leftBtn">◀</button>
             <button class="ctrl-btn" id="rightBtn">▶</button>
@@ -76,7 +37,6 @@
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('scoreVal');
         const highscoreElement = document.getElementById('highScore');
-        const shieldUI = document.getElementById('shield-timer');
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -89,42 +49,56 @@
         let highScore = localStorage.getItem('racingHighScore') || 0;
         highscoreElement.innerText = highScore;
 
-        let gameActive = true, isPaused = false, isShielded = false;
+        let gameActive = true, isPaused = false;
         let car = { x: 0, y: 0, w: 50, h: 90, speed: 8 };
-        let enemies = [], hearts = [];
-
-        // Controls Logic
+        let enemies = [];
         let keys = { ArrowLeft: false, ArrowRight: false };
 
         const lBtn = document.getElementById('leftBtn');
         const rBtn = document.getElementById('rightBtn');
-
         lBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowLeft = true; });
         lBtn.addEventListener('touchend', () => keys.ArrowLeft = false);
         rBtn.addEventListener('touchstart', (e) => { e.preventDefault(); keys.ArrowRight = true; });
         rBtn.addEventListener('touchend', () => keys.ArrowRight = false);
 
-        function drawCar(x, y, color, isPlayer) {
-            if (isPlayer && isShielded) { ctx.shadowBlur = 20; ctx.shadowColor = "#ff3f81"; }
-            ctx.fillStyle = "#000";
-            ctx.fillRect(x-2, y+10, 6, 20); ctx.fillRect(x+46, y+10, 6, 20);
-            ctx.fillRect(x-2, y+60, 6, 20); ctx.fillRect(x+46, y+60, 6, 20);
+        // --- NEW 3D CAR DRAWING FUNCTION ---
+        function draw3DCar(x, y, w, h, color, isPlayer) {
+            let depth = 8; // Depth for 3D effect
+            
+            // 1. Shadow (Niche wali parchaai)
+            ctx.fillStyle = "rgba(0,0,0,0.3)";
+            ctx.fillRect(x + 10, y + 10, w, h);
+
+            // 2. 3D Side/Bottom Layer (Darker color for depth)
+            ctx.fillStyle = "rgba(0,0,0,0.4)";
+            ctx.beginPath();
+            ctx.roundRect(x + 3, y + 3, w, h, 10);
+            ctx.fill();
+
+            // 3. Main Car Body (Top layer)
             ctx.fillStyle = color;
-            ctx.beginPath(); ctx.roundRect(x, y, 50, 90, 10); ctx.fill();
-            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, 10);
+            ctx.fill();
+
+            // 4. Car Details (Roof/Window)
+            ctx.fillStyle = "rgba(255,255,255,0.2)";
+            let windowY = isPlayer ? y + 15 : y + 55;
+            ctx.fillRect(x + 8, windowY, w - 16, 20);
+
+            // 5. Highlights (Symmetry/Gloss)
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 5, y + 5, w - 10, h - 10);
         }
 
         function spawn() {
-            let spawnChance = 0.02 + (score > 20 ? 0.01 : 0);
-            if (Math.random() < spawnChance && enemies.length < 4) {
+            if (Math.random() < 0.02 && enemies.length < 4) {
                 let laneWidth = canvas.width / 4;
                 let lane = Math.floor(Math.random() * 4);
                 let xPos = (lane * laneWidth) + (laneWidth/2) - 25;
                 let speed = 5 + (score > 20 ? (score-20)*0.2 : 0);
                 enemies.push({ x: xPos, y: -100, w: 50, h: 90, speed: speed });
-            }
-            if (Math.random() < 0.003 && hearts.length < 1) {
-                hearts.push({ x: Math.random()*(canvas.width-50), y: -50 });
             }
         }
 
@@ -139,53 +113,31 @@
             enemies.forEach((enemy, i) => {
                 enemy.y += enemy.speed;
                 if (car.x < enemy.x + 50 && car.x + 50 > enemy.x && car.y < enemy.y + 90 && car.y + 90 > enemy.y) {
-                    if (!isShielded) {
-                        gameActive = false;
-                        if(score > highScore) localStorage.setItem('racingHighScore', score);
-                        alert("CRASHED! Score: " + score);
-                        resetGame();
-                    }
+                    gameActive = false;
+                    if(score > highScore) localStorage.setItem('racingHighScore', score);
+                    alert("BOOM! Crash. Score: " + score);
+                    resetGame();
                 }
                 if (enemy.y > canvas.height) { enemies.splice(i, 1); score++; scoreElement.innerText = score; }
-            });
-
-            hearts.forEach((h, i) => {
-                h.y += 4;
-                if (car.x < h.x + 40 && car.x + 50 > h.x && car.y < h.y + 40 && car.y + 90 > h.y) {
-                    hearts.splice(i, 1); activateShield();
-                }
-                if(h.y > canvas.height) hearts.splice(i, 1);
             });
             spawn();
         }
 
-        function activateShield() {
-            isShielded = true; shieldUI.style.display = "block";
-            let time = 5; document.getElementById('timer').innerText = time;
-            let itv = setInterval(() => {
-                if(isPaused) return;
-                time--; document.getElementById('timer').innerText = time;
-                if(time <= 0) { clearInterval(itv); isShielded = false; shieldUI.style.display = "none"; }
-            }, 1000);
-        }
-
-        function togglePause() { isPaused = !isPaused; document.getElementById('pauseBtn').innerText = isPaused ? "RESUME" : "PAUSE"; if(!isPaused) animate(); }
-
-        function resetGame() {
-            score = 0; scoreElement.innerText = 0; enemies = []; hearts = [];
-            car.x = canvas.width/2 - 25; gameActive = true; isPaused = false;
-        }
+        function togglePause() { isPaused = !isPaused; if(!isPaused) animate(); }
+        function resetGame() { score = 0; scoreElement.innerText = 0; enemies = []; car.x = canvas.width/2 - 25; gameActive = true; isPaused = false; }
 
         function draw() {
             ctx.fillStyle = "#2c3e50"; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             // Road Lines
-            ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.setLineDash([30, 30]);
+            ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.setLineDash([30, 30]);
             for(let i=1; i<4; i++) {
                 ctx.beginPath(); ctx.moveTo(i * (canvas.width/4), 0); ctx.lineTo(i * (canvas.width/4), canvas.height); ctx.stroke();
             }
-            drawCar(car.x, car.y, "#00d2ff", true);
-            enemies.forEach(e => drawCar(e.x, e.y, "#e74c3c", false));
-            ctx.font = "35px Arial"; hearts.forEach(h => ctx.fillText("❤️", h.x, h.y));
+
+            // Draw 3D Styled Cars
+            draw3DCar(car.x, car.y, car.w, car.h, "#00d2ff", true);
+            enemies.forEach(e => draw3DCar(e.x, e.y, e.w, e.h, "#ff4757", false));
         }
 
         function animate() {
