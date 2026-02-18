@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Mobile Touch Fix</title>
+    <title>Frutix Blast - Mobile Fixed</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,27 +12,31 @@
             overflow: hidden; touch-action: none; /* Mobile scroll block */
         }
 
-        /* Loader & Splash */
+        /* 1. Splash Screen & Loading Circle */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         .loader {
-            border: 6px solid rgba(255,255,255,0.2); border-top: 6px solid #fff;
-            border-radius: 50%; width: 50px; height: 50px;
-            animation: spin 1s linear infinite; margin-top: 20px;
+            border: 6px solid rgba(255,255,255,0.2);
+            border-top: 6px solid #fff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-top: 20px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* Menus */
-        #main-menu, #level-menu {
+        /* 2. Main Menu */
+        #main-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 8000;
         }
-        #level-menu { background: #16213e; overflow-y: auto; padding: 40px 0; }
 
+        /* 3. Settings Modal */
         #settings-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 80%; max-width: 300px; background: #0f3460; border: 3px solid #e94560;
@@ -40,58 +44,71 @@
             flex-direction: column; align-items: center; z-index: 9500; text-align: center;
         }
 
+        /* Common Buttons */
         .btn {
             width: 200px; padding: 15px; margin: 10px; border: none; border-radius: 50px;
             background: #e94560; color: white; font-size: 18px; font-weight: bold;
             box-shadow: 0 4px #950101; cursor: pointer;
         }
+        .btn:active { transform: scale(0.95); }
 
-        /* Grid & Candies */
+        /* Game UI & Grid */
         #game-ui { display: none; text-align: center; color: white; }
         .info-panel {
-            background: #0f3460; padding: 10px; border-radius: 15px;
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 15px;
+            background: #0f3460; padding: 15px; border-radius: 20px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px;
         }
         #grid { 
-            display: grid; grid-template-columns: repeat(8, 40px); gap: 5px; 
+            display: grid; grid-template-columns: repeat(8, 42px); gap: 5px; 
             background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px;
         }
         .candy { 
-            width: 40px; height: 40px; border-radius: 8px; 
+            width: 42px; height: 42px; border-radius: 10px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; background: #fff; touch-action: none;
+            font-size: 26px; background: #fff;
+            touch-action: none; /* Fixes mobile swipe issues */
+            user-select: none;
         }
 
-        .level-grid { display: grid; grid-template-columns: repeat(5, 55px); gap: 10px; padding: 20px; }
-        .level-btn { width: 55px; height: 55px; background: #e94560; color: white; border-radius: 12px; font-weight: bold; border: none; }
+        /* Levels Menu */
+        #level-menu {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #16213e; display: none; flex-direction: column;
+            align-items: center; z-index: 9000; overflow-y: auto; padding: 40px 0;
+        }
+        .level-grid { display: grid; grid-template-columns: repeat(5, 60px); gap: 15px; padding: 20px; }
+        .level-btn { width: 60px; height: 60px; background: #e94560; color: white; border-radius: 15px; font-weight: bold; border: none; }
         .level-btn.locked { background: #444; opacity: 0.5; }
     </style>
 </head>
 <body>
 
     <div id="splash">
-        <h1>Frutix Blast</h1>
+        <h1 style="font-size: 40px;">Frutix Blast</h1>
         <div class="loader"></div>
-        <p>LOADING...</p>
+        <p style="margin-top: 15px;">LOADING ASSETS...</p>
     </div>
 
     <div id="main-menu">
-        <h1 style="color: #e94560;">MENU</h1>
+        <h1 style="color: #e94560; font-size: 45px; text-shadow: 2px 2px #fff;">MENU</h1>
         <button class="btn" onclick="startLevel(unlockedLevel)">NEW GAME</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
-        <button class="btn" onclick="toggleSettings(true)" style="background: #4e31aa;">SETTINGS</button>
+        <button class="btn" onclick="toggleSettings(true)" style="background: #4e31aa; box-shadow: 0 4px #2a1b5e;">SETTINGS</button>
     </div>
 
     <div id="settings-modal">
         <h2>SETTINGS</h2>
-        <button class="btn" style="width:150px; background:#555;" onclick="resetProgress()">RESET DATA</button>
-        <button class="btn" style="width:150px;" onclick="toggleSettings(false)">CLOSE</button>
+        <hr style="width:100%; border:1px solid #e94560;">
+        <p>Sound: <b>ON</b></p>
+        <p>Music: <b>ON</b></p>
+        <button class="btn" style="width:150px; background:#555; font-size:14px;" onclick="resetProgress()">RESET ALL DATA</button>
+        <button class="btn" style="width:150px; margin-top:20px;" onclick="toggleSettings(false)">CLOSE</button>
     </div>
 
     <div id="level-menu">
-        <h1>LEVELS</h1>
+        <h1 style="color:white">SELECT LEVEL</h1>
         <div class="level-grid" id="levelContainer"></div>
-        <button class="btn" onclick="hideLevelMenu()">BACK</button>
+        <button class="btn" style="background:#555" onclick="hideLevelMenu()">BACK</button>
     </div>
 
     <div id="game-ui">
@@ -99,27 +116,34 @@
             <div>LVL: <b id="lvlShow">1</b></div>
             <div>GOAL: <b id="targetShow">200</b></div>
             <div>SCORE: <b id="scoreShow">0</b></div>
-            <div style="color: #f9d342;">MOVES: <b id="movesShow">25</b></div>
+            <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
         </div>
         <div id="grid"></div>
-        <button class="btn" style="width:100px; margin-top:20px; background:#444;" onclick="backToMenu()">EXIT</button>
+        <button class="btn" style="margin-top: 20px; width: 120px; background:#444;" onclick="backToMenu()">EXIT</button>
     </div>
 
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
-        let currentLvl = 1, score = 0, moves = 25, target = 200, candies = [];
+        let currentLvl = 1, score = 0, moves = 20, target = 200, candies = [];
         let isGameActive = false;
 
-        window.onload = () => setTimeout(() => {
-            document.getElementById('splash').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
-        }, 2000);
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('splash').style.display = 'none';
+                document.getElementById('main-menu').style.display = 'flex';
+            }, 3000);
+        };
 
-        function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
-        
+        function toggleSettings(show) {
+            document.getElementById('settings-modal').style.display = show ? 'flex' : 'none';
+        }
+
         function resetProgress() {
-            if(confirm("Reset progress?")) { localStorage.setItem('fb_unlocked', 1); location.reload(); }
+            if(confirm("Dhyan se! Kya aap saara progress khatam karna chahte hain?")) {
+                localStorage.setItem('fb_unlocked', 1);
+                location.reload();
+            }
         }
 
         function showLevelMenu() {
@@ -167,7 +191,7 @@
                 grid.appendChild(c);
                 candies.push(c);
             }
-            addTouchLogic();
+            addDrag();
         }
 
         function wouldCreateMatch(i, fruit) {
@@ -176,79 +200,77 @@
             return false;
         }
 
-        // --- MOBILE TOUCH FIX ---
-        function addTouchLogic() {
-            let startID;
+        // --- MOBILE & PC MOVEMENT FIXED ---
+        function addDrag() {
+            let idD;
             candies.forEach(c => {
-                // For Mobile
-                c.ontouchstart = (e) => {
-                    startID = parseInt(e.target.id);
+                // Ye function Mobile aur Laptop dono pe kaam karega
+                c.onpointerdown = e => {
+                    idD = parseInt(e.target.id);
                 };
-                c.ontouchend = (e) => {
-                    if (!isGameActive) return;
-                    let touch = e.changedTouches[0];
-                    let targetEl = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                c.onpointerup = e => {
+                    if(!isGameActive) return;
                     
-                    if (targetEl && targetEl.className === 'candy') {
-                        let endID = parseInt(targetEl.id);
-                        handleMove(startID, endID);
+                    // Mobile fix: find element at touch point
+                    const targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    
+                    if(targetEl && targetEl.className === 'candy') {
+                        let idR = parseInt(targetEl.id);
+                        let adj = [idD-1, idD+1, idD-8, idD+8];
+                        
+                        // Row wrap check
+                        if(idD % 8 === 0 && idR === idD - 1) adj = adj.filter(x => x !== idD-1);
+                        if(idD % 8 === 7 && idR === idD + 1) adj = adj.filter(x => x !== idD+1);
+
+                        if(adj.includes(idR)) {
+                            let temp = candies[idD].innerHTML;
+                            candies[idD].innerHTML = candies[idR].innerHTML;
+                            candies[idR].innerHTML = temp;
+                            moves--;
+                            document.getElementById('movesShow').innerText = moves;
+                        }
                     }
-                };
-                // For PC
-                c.onmousedown = (e) => startID = parseInt(e.target.id);
-                c.onmouseup = (e) => {
-                    if (!isGameActive) return;
-                    let targetEl = document.elementFromPoint(e.clientX, e.clientY);
-                    if (targetEl && targetEl.className === 'candy') {
-                        handleMove(startID, parseInt(targetEl.id));
-                    }
-                };
+                }
             });
         }
 
-        function handleMove(id1, id2) {
-            let adj = [id1-1, id1+1, id1-8, id1+8];
-            // Border check
-            if (id1 % 8 === 0 && id2 === id1 - 1) return;
-            if (id1 % 8 === 7 && id2 === id1 + 1) return;
-
-            if (adj.includes(id2) && moves > 0) {
-                let tmp = candies[id1].innerHTML;
-                candies[id1].innerHTML = candies[id2].innerHTML;
-                candies[id2].innerHTML = tmp;
-                moves--;
-                document.getElementById('movesShow').innerText = moves;
-            }
-        }
-
-        // Game Loop
         setInterval(() => {
-            if(!isGameActive) return;
-            let matched = false;
-            for(let i=0; i<64; i++) {
-                if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                    score += 10; candies[i].innerHTML = ''; candies[i+1].innerHTML = ''; candies[i+2].innerHTML = ''; matched = true;
+            if(document.getElementById('game-ui').style.display === 'block' && isGameActive) {
+                let matched = false;
+                for(let i=0; i<64; i++) {
+                    if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
+                        score += 10; candies[i].innerHTML = ''; candies[i+1].innerHTML = ''; candies[i+2].innerHTML = '';
+                        matched = true;
+                    }
+                    if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
+                        score += 10; candies[i].innerHTML = ''; candies[i+8].innerHTML = ''; candies[i+16].innerHTML = '';
+                        matched = true;
+                    }
                 }
-                if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                    score += 10; candies[i].innerHTML = ''; candies[i+8].innerHTML = ''; candies[i+16].innerHTML = ''; matched = true;
-                }
-            }
-            if(matched) document.getElementById('scoreShow').innerText = score;
+                if(matched) document.getElementById('scoreShow').innerText = score;
 
-            // Gravity
-            for(let i=0; i<56; i++) {
-                if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') {
-                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
+                for(let i=0; i<56; i++) {
+                    if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') {
+                        candies[i+8].innerHTML = candies[i].innerHTML;
+                        candies[i].innerHTML = '';
+                    }
+                }
+                for(let i=0; i<64; i++) {
+                    if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+                }
+
+                if(score >= target) {
+                    isGameActive = false;
+                    alert("LEVEL COMPLETE!");
+                    if(currentLvl === unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
+                    backToMenu();
+                } else if(moves <= 0) {
+                    isGameActive = false;
+                    alert("GAME OVER!"); backToMenu();
                 }
             }
-            // Refill
-            for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            }
-
-            if(score >= target) { alert("WINNER!"); backToMenu(); }
-            else if(moves <= 0) { alert("GAME OVER!"); backToMenu(); }
-        }, 200);
+        }, 150);
 
         function backToMenu() {
             isGameActive = false;
