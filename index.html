@@ -3,44 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Candy Crush Clone</title>
+    <title>Emoji Candy Crush</title>
     <style>
-        body { margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f0f0f0; font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none; }
-        #header { margin-bottom: 10px; text-align: center; }
-        .score-board { font-size: 24px; font-weight: bold; color: #ff3f81; }
-        
-        /* Game Board Grid */
-        #grid { 
-            display: grid; 
-            grid-template-columns: repeat(8, 40px); 
-            grid-template-rows: repeat(8, 40px); 
-            gap: 2px; 
-            background: #ccc; 
-            padding: 5px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        body { 
+            margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            height: 100vh; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; 
+            font-family: 'Arial', sans-serif; overflow: hidden; 
         }
-
-        /* Candies Style */
+        .header { text-align: center; margin-bottom: 15px; }
+        .score-box { 
+            background: rgba(255, 255, 255, 0.9); padding: 10px 25px; border-radius: 50px; 
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3); font-size: 22px; color: #764ba2; font-weight: bold;
+        }
+        #grid { 
+            display: grid; grid-template-columns: repeat(8, 42px); 
+            grid-template-rows: repeat(8, 42px); gap: 4px; 
+            background: rgba(255, 255, 255, 0.2); padding: 10px; 
+            border-radius: 15px; border: 4px solid rgba(255,255,255,0.5); 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); touch-action: none;
+        }
         .candy { 
-            width: 40px; 
-            height: 40px; 
-            border-radius: 5px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 20px; 
-            cursor: pointer;
-            transition: transform 0.1s;
+            width: 42px; height: 42px; border-radius: 8px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 24px; cursor: pointer;
+            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1); 
+            transition: transform 0.1s ease;
+            background: rgba(255,255,255,0.8);
         }
         .candy:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
-    <div id="header">
-        <div class="score-board">SCORE: <span id="score">0</span></div>
-        <p style="font-size: 12px; color: #666;">Drag candies to swap</p>
+    <div class="header">
+        <div class="score-box">🍭 SCORE: <span id="score">0</span></div>
     </div>
 
     <div id="grid"></div>
@@ -52,122 +49,117 @@
         const candies = [];
         let score = 0;
 
-        const candyColors = [
-            '#FF5733', // Red
-            '#33FF57', // Green
-            '#3357FF', // Blue
-            '#F1C40F', // Yellow
-            '#9B59B6', // Purple
-            '#E67E22'  // Orange
+        // Candy Definitions (Emoji + Background Color)
+        const candyTypes = [
+            { emoji: '🍎', color: '#ffadad' },
+            { emoji: '🍇', color: '#caffbf' },
+            { emoji: '🍊', color: '#ffd6a5' },
+            { emoji: '🫐', color: '#a0c4ff' },
+            { emoji: '🍋', color: '#fdffb6' },
+            { emoji: '🍬', color: '#bdb2ff' }
         ];
 
-        // 1. Board Create Karna
         function createBoard() {
             for (let i = 0; i < width * width; i++) {
                 const candy = document.createElement('div');
                 candy.classList.add('candy');
-                candy.setAttribute('draggable', true);
                 candy.setAttribute('id', i);
-                let randomColor = Math.floor(Math.random() * candyColors.length);
-                candy.style.backgroundColor = candyColors[randomColor];
+                
+                let randomType = candyTypes[Math.floor(Math.random() * candyTypes.length)];
+                candy.innerHTML = randomType.emoji;
+                candy.style.backgroundColor = randomType.color;
+                
                 grid.appendChild(candy);
                 candies.push(candy);
             }
         }
         createBoard();
 
-        // 2. Swapping Logic
-        let colorBeingDragged, colorBeingReplaced;
-        let idBeingDragged, idBeingReplaced;
+        let idDragged, idReplaced, emojiDragged, colorDragged;
 
-        candies.forEach(candy => candy.addEventListener('touchstart', dragStart));
-        candies.forEach(candy => candy.addEventListener('touchend', dragEnd));
-        candies.forEach(candy => candy.addEventListener('touchmove', e => {
-            let touch = e.touches[0];
-            let target = document.elementFromPoint(touch.clientX, touch.clientY);
-            if (target && target.classList.contains('candy')) {
-                idBeingReplaced = parseInt(target.id);
-                colorBeingReplaced = target.style.backgroundColor;
-            }
-        }));
+        // Desktop & Mobile Controls
+        candies.forEach(candy => {
+            candy.addEventListener('pointerdown', e => {
+                idDragged = parseInt(e.target.id);
+                emojiDragged = e.target.innerHTML;
+                colorDragged = e.target.style.backgroundColor;
+            });
 
-        function dragStart() {
-            colorBeingDragged = this.style.backgroundColor;
-            idBeingDragged = parseInt(this.id);
-        }
+            candy.addEventListener('pointerup', e => {
+                const target = document.elementFromPoint(e.clientX, e.clientY);
+                if (target && target.classList.contains('candy')) {
+                    idReplaced = parseInt(target.id);
+                    
+                    let validMoves = [idDragged-1, idDragged+1, idDragged-width, idDragged+width];
+                    if (validMoves.includes(idReplaced)) {
+                        // Swap Emoji and Color
+                        let emojiReplaced = candies[idReplaced].innerHTML;
+                        let colorReplaced = candies[idReplaced].style.backgroundColor;
 
-        function dragEnd() {
-            let validMoves = [
-                idBeingDragged - 1,
-                idBeingDragged - width,
-                idBeingDragged + 1,
-                idBeingDragged + width
-            ];
+                        candies[idReplaced].innerHTML = emojiDragged;
+                        candies[idReplaced].style.backgroundColor = colorDragged;
 
-            let validMove = validMoves.includes(idBeingReplaced);
+                        candies[idDragged].innerHTML = emojiReplaced;
+                        candies[idDragged].style.backgroundColor = colorReplaced;
+                        
+                        setTimeout(checkMatches, 100);
+                    }
+                }
+            });
+        });
 
-            if (idBeingReplaced && validMove) {
-                candies[idBeingReplaced].style.backgroundColor = colorBeingDragged;
-                candies[idBeingDragged].style.backgroundColor = colorBeingReplaced;
-                checkMatches();
-            }
-        }
-
-        // 3. Matching Logic (Row and Column)
         function checkMatches() {
-            // Check for Row of Three
-            for (let i = 0; i < 61; i++) {
-                let rowOfThree = [i, i + 1, i + 2];
-                let decidedColor = candies[i].style.backgroundColor;
-                const isBlank = candies[i].style.backgroundColor === '';
-
-                const notValid = [6, 7, 14, 15, 22, 23, 30, 31, 38, 39, 46, 47, 54, 55];
-                if (notValid.includes(i)) continue;
-
-                if (rowOfThree.every(index => candies[index].style.backgroundColor === decidedColor && !isBlank)) {
-                    score += 3;
+            // Horizontal check
+            for (let i = 0; i < 62; i++) {
+                let row = [i, i+1, i+2];
+                let emoji = candies[i].innerHTML;
+                if (emoji === '') continue;
+                if (i % 8 > 5) continue;
+                if (row.every(idx => candies[idx].innerHTML === emoji)) {
+                    score += 10;
                     scoreDisplay.innerHTML = score;
-                    rowOfThree.forEach(index => {
-                        candies[index].style.backgroundColor = '';
+                    row.forEach(idx => {
+                        candies[idx].innerHTML = '';
+                        candies[idx].style.backgroundColor = 'transparent';
                     });
                 }
             }
-            // Check for Column of Three
-            for (let i = 0; i < 47; i++) {
-                let columnOfThree = [i, i + width, i + width * 2];
-                let decidedColor = candies[i].style.backgroundColor;
-                const isBlank = candies[i].style.backgroundColor === '';
-
-                if (columnOfThree.every(index => candies[index].style.backgroundColor === decidedColor && !isBlank)) {
-                    score += 3;
+            // Vertical check
+            for (let i = 0; i < 48; i++) {
+                let col = [i, i+width, i+width*2];
+                let emoji = candies[i].innerHTML;
+                if (emoji === '') continue;
+                if (col.every(idx => candies[idx].innerHTML === emoji)) {
+                    score += 10;
                     scoreDisplay.innerHTML = score;
-                    columnOfThree.forEach(index => {
-                        candies[index].style.backgroundColor = '';
+                    col.forEach(idx => {
+                        candies[idx].innerHTML = '';
+                        candies[idx].style.backgroundColor = 'transparent';
                     });
                 }
             }
-            fillEmpty();
         }
 
-        // 4. Candies ko niche girana aur naye candies lana
-        function fillEmpty() {
-            for (let i = 0; i < 55; i++) {
-                if (candies[i + width].style.backgroundColor === '') {
+        function moveDown() {
+            for (let i = 0; i < 56; i++) {
+                if (candies[i + width].innerHTML === '') {
+                    candies[i + width].innerHTML = candies[i].innerHTML;
                     candies[i + width].style.backgroundColor = candies[i].style.backgroundColor;
-                    candies[i].style.backgroundColor = '';
+                    candies[i].innerHTML = '';
+                    candies[i].style.backgroundColor = 'transparent';
                 }
-                const firstRow = [0, 1, 2, 3, 4, 5, 6, 7];
-                const isFirstRow = firstRow.includes(i);
-                if (isFirstRow && candies[i].style.backgroundColor === '') {
-                    let randomColor = Math.floor(Math.random() * candyColors.length);
-                    candies[i].style.backgroundColor = candyColors[randomColor];
+                if (i < 8 && candies[i].innerHTML === '') {
+                    let randomType = candyTypes[Math.floor(Math.random() * candyTypes.length)];
+                    candies[i].innerHTML = randomType.emoji;
+                    candies[i].style.backgroundColor = randomType.color;
                 }
             }
         }
 
-        window.setInterval(function(){
+        window.setInterval(() => {
             checkMatches();
-        }, 100);
+            moveDown();
+        }, 150);
 
     </script>
 </body>
