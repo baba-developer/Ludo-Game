@@ -33,17 +33,11 @@
             align-items: center; justify-content: center; z-index: 8000;
         }
 
-        /* Main Menu Developer Tag */
         .dev-tag-menu {
-            position: absolute;
-            bottom: 30px;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 12px;
-            letter-spacing: 2px;
-            font-weight: bold;
+            position: absolute; bottom: 30px; color: rgba(255, 255, 255, 0.4);
+            font-size: 12px; letter-spacing: 2px; font-weight: bold;
         }
 
-        /* Modals (Settings & Win) */
         #settings-modal, #win-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 85%; max-width: 320px; background: #0f3460; border: 4px solid #e94560;
@@ -57,7 +51,6 @@
             box-shadow: 0 4px #950101; cursor: pointer; 
         }
 
-        /* Game Board */
         #game-ui { display: none; text-align: center; color: white; width: 100%; max-width: 360px; }
         .info-panel { 
             background: #0f3460; padding: 10px; border-radius: 15px; 
@@ -68,7 +61,12 @@
             display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
             background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; 
         }
-        .candy { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fff; touch-action: none; }
+        .candy { 
+            width: 40px; height: 40px; border-radius: 8px; display: flex; 
+            align-items: center; justify-content: center; font-size: 24px; 
+            background: #fff; touch-action: none; transition: transform 0.2s;
+        }
+        .bomb { background: #ffd700 !important; box-shadow: 0 0 10px #ffd700; }
         
         .level-scroll-box { width: 90%; max-height: 70vh; overflow-y: auto; margin-top: 20px; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 15px; border: 1px solid #4e31aa; }
         .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
@@ -90,7 +88,6 @@
         <button class="btn" onclick="playLastUnlocked()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">CONTINUE</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
-        
         <div class="dev-tag-menu">POWERED BY BABA-DEVELOPER</div>
     </div>
 
@@ -164,7 +161,7 @@
         }
 
         function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
-        function pauseGame() { isGameActive = false; document.getElementById('modal-title').innerText = "PAUSED"; toggleSettings(true); }
+        function pauseGame() { isGameActive = false; toggleSettings(true); }
         function restartLevel() { toggleSettings(false); startLevel(currentLvl); }
         function playLastUnlocked() { startLevel(unlockedLevel); }
 
@@ -240,14 +237,6 @@
             return false;
         }
 
-        function checkMatches() {
-            for(let i=0; i<64; i++) {
-                if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) return true;
-                if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) return true;
-            }
-            return false;
-        }
-
         function addTouchLogic() {
             let startID;
             candies.forEach(c => {
@@ -255,7 +244,7 @@
                 c.onpointerup = (e) => {
                     if (!isGameActive) return;
                     let targetEl = document.elementFromPoint(e.clientX, e.clientY);
-                    if (targetEl && targetEl.className === 'candy') {
+                    if (targetEl && targetEl.className.includes('candy')) {
                         let endID = parseInt(targetEl.id);
                         handleMove(startID, endID);
                     }
@@ -270,31 +259,102 @@
 
             if (adj.includes(id2)) {
                 let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+                let b1 = candies[id1].classList.contains('bomb'), b2 = candies[id2].classList.contains('bomb');
+                
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+                if(b1) { candies[id1].classList.remove('bomb'); candies[id2].classList.add('bomb'); }
+                else if(b2) { candies[id2].classList.remove('bomb'); candies[id1].classList.add('bomb'); }
+
                 if (checkMatches()) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
                 } else {
-                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
+                    setTimeout(() => { 
+                        candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; 
+                        if(b1) { candies[id1].classList.add('bomb'); candies[id2].classList.remove('bomb'); }
+                        else if(b2) { candies[id2].classList.add('bomb'); candies[id1].classList.remove('bomb'); }
+                    }, 200);
                     playSound(150, 'sine');
                 }
             }
         }
 
-        setInterval(() => {
-            if(!isGameActive) return;
-            let matched = false;
+        function checkMatches() {
+            let hasMatch = false;
             for(let i=0; i<64; i++) {
-                if(i % 8 < 6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                    score += 10; candies[i].innerHTML = ''; candies[i+1].innerHTML = ''; candies[i+2].innerHTML = ''; matched = true;
+                // Horizontal Check
+                if(i % 8 < 6) {
+                    let matchLen = 1;
+                    while(i % 8 + matchLen < 8 && candies[i].innerHTML === candies[i+matchLen].innerHTML && candies[i].innerHTML !== '') matchLen++;
+                    if(matchLen >= 3) {
+                        if(matchLen >= 4) makeBomb(i + Math.floor(matchLen/2));
+                        for(let j=0; j<matchLen; j++) clearCandy(i+j);
+                        hasMatch = true;
+                    }
                 }
-                if(i < 48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                    score += 10; candies[i].innerHTML = ''; candies[i+8].innerHTML = ''; candies[i+16].innerHTML = ''; matched = true;
+                // Vertical Check
+                if(i < 48) {
+                    let matchLen = 1;
+                    while(i + matchLen*8 < 64 && candies[i].innerHTML === candies[i+matchLen*8].innerHTML && candies[i].innerHTML !== '') matchLen++;
+                    if(matchLen >= 3) {
+                        if(matchLen >= 4) makeBomb(i + Math.floor(matchLen/2)*8);
+                        for(let j=0; j<matchLen; j++) clearCandy(i+j*8);
+                        hasMatch = true;
+                    }
                 }
             }
-            if(matched) { document.getElementById('scoreShow').innerText = score; playSound(600, 'triangle'); }
-            for(let i=0; i<56; i++) { if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') { candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = ''; } }
-            for(let i=0; i<64; i++) { if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)]; }
+            return hasMatch;
+        }
+
+        function makeBomb(idx) {
+            setTimeout(() => {
+                candies[idx].innerHTML = '💣';
+                candies[idx].classList.add('bomb');
+            }, 50);
+        }
+
+        function clearCandy(idx) {
+            if(candies[idx].classList.contains('bomb')) {
+                candies[idx].classList.remove('bomb');
+                // Bomb Effect: Clear Row and Column
+                let row = Math.floor(idx/8);
+                let col = idx % 8;
+                for(let i=0; i<8; i++) {
+                    score += 5;
+                    candies[row*8 + i].innerHTML = ''; // Clear Row
+                    candies[i*8 + col].innerHTML = ''; // Clear Col
+                }
+                playSound(200, 'sawtooth');
+            }
+            score += 10;
+            candies[idx].innerHTML = '';
+        }
+
+        setInterval(() => {
+            if(!isGameActive) return;
+            if(checkMatches()) { 
+                document.getElementById('scoreShow').innerText = score; 
+                playSound(600, 'triangle'); 
+            }
+            
+            // Gravity
+            for(let i=0; i<56; i++) { 
+                if(candies[i+8].innerHTML === '' && candies[i].innerHTML !== '') { 
+                    candies[i+8].innerHTML = candies[i].innerHTML; 
+                    if(candies[i].classList.contains('bomb')) {
+                        candies[i+8].classList.add('bomb');
+                        candies[i].classList.remove('bomb');
+                    }
+                    candies[i].innerHTML = ''; 
+                } 
+            }
+            // Refill
+            for(let i=0; i<64; i++) { 
+                if(candies[i].innerHTML === '') {
+                    candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)]; 
+                    candies[i].classList.remove('bomb');
+                }
+            }
 
             if(score >= target) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
@@ -302,7 +362,7 @@
             } else if(moves <= 0) {
                 isGameActive = false; alert("GAME OVER!"); backToMenu();
             }
-        }, 200);
+        }, 250);
 
         function backToMenu() {
             isGameActive = false;
