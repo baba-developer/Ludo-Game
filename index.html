@@ -3,43 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Emoji Candy Crush</title>
+    <title>Emoji Candy Crush Pro</title>
     <style>
         body { 
-            margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            margin: 0; background: linear-gradient(45deg, #ee9ca7, #ffdde1); 
             height: 100vh; display: flex; flex-direction: column; 
             align-items: center; justify-content: center; 
-            font-family: 'Arial', sans-serif; overflow: hidden; 
+            font-family: 'Arial', sans-serif; overflow: hidden; touch-action: none;
         }
-        .header { text-align: center; margin-bottom: 15px; }
         .score-box { 
-            background: rgba(255, 255, 255, 0.9); padding: 10px 25px; border-radius: 50px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3); font-size: 22px; color: #764ba2; font-weight: bold;
+            background: white; padding: 10px 30px; border-radius: 50px; 
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1); font-size: 24px; 
+            color: #d4418e; margin-bottom: 20px; font-weight: bold;
         }
         #grid { 
             display: grid; grid-template-columns: repeat(8, 42px); 
-            grid-template-rows: repeat(8, 42px); gap: 4px; 
-            background: rgba(255, 255, 255, 0.2); padding: 10px; 
-            border-radius: 15px; border: 4px solid rgba(255,255,255,0.5); 
-            box-shadow: 0 15px 35px rgba(0,0,0,0.2); touch-action: none;
+            grid-template-rows: repeat(8, 42px); gap: 5px; 
+            background: rgba(255, 255, 255, 0.3); padding: 10px; 
+            border-radius: 15px; border: 4px solid white;
         }
         .candy { 
-            width: 42px; height: 42px; border-radius: 8px; 
+            width: 42px; height: 42px; border-radius: 10px; 
             display: flex; align-items: center; justify-content: center; 
-            font-size: 24px; cursor: pointer;
-            box-shadow: inset 0 -3px 5px rgba(0,0,0,0.1); 
-            transition: transform 0.1s ease;
-            background: rgba(255,255,255,0.8);
+            font-size: 24px; cursor: pointer; background: white;
+            transition: transform 0.2s, background-color 0.3s;
         }
-        .candy:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="score-box">🍭 SCORE: <span id="score">0</span></div>
-    </div>
-
+    <div class="score-box">🍭 SCORE: <span id="score">0</span></div>
     <div id="grid"></div>
 
     <script>
@@ -49,14 +42,10 @@
         const candies = [];
         let score = 0;
 
-        // Candy Definitions (Emoji + Background Color)
         const candyTypes = [
-            { emoji: '🍎', color: '#ffadad' },
-            { emoji: '🍇', color: '#caffbf' },
-            { emoji: '🍊', color: '#ffd6a5' },
-            { emoji: '🫐', color: '#a0c4ff' },
-            { emoji: '🍋', color: '#fdffb6' },
-            { emoji: '🍬', color: '#bdb2ff' }
+            { emoji: '🍎', color: '#ffadad' }, { emoji: '🍇', color: '#caffbf' },
+            { emoji: '🍊', color: '#ffd6a5' }, { emoji: '🫐', color: '#a0c4ff' },
+            { emoji: '🍋', color: '#fdffb6' }, { emoji: '🍬', color: '#bdb2ff' }
         ];
 
         function createBoard() {
@@ -64,80 +53,95 @@
                 const candy = document.createElement('div');
                 candy.classList.add('candy');
                 candy.setAttribute('id', i);
-                
                 let randomType = candyTypes[Math.floor(Math.random() * candyTypes.length)];
                 candy.innerHTML = randomType.emoji;
                 candy.style.backgroundColor = randomType.color;
-                
                 grid.appendChild(candy);
                 candies.push(candy);
             }
         }
         createBoard();
 
-        let idDragged, idReplaced, emojiDragged, colorDragged;
+        let idDragged, idReplaced;
 
-        // Desktop & Mobile Controls
         candies.forEach(candy => {
-            candy.addEventListener('pointerdown', e => {
-                idDragged = parseInt(e.target.id);
-                emojiDragged = e.target.innerHTML;
-                colorDragged = e.target.style.backgroundColor;
-            });
-
+            candy.addEventListener('pointerdown', e => idDragged = parseInt(e.target.id));
             candy.addEventListener('pointerup', e => {
                 const target = document.elementFromPoint(e.clientX, e.clientY);
                 if (target && target.classList.contains('candy')) {
                     idReplaced = parseInt(target.id);
-                    
-                    let validMoves = [idDragged-1, idDragged+1, idDragged-width, idDragged+width];
-                    if (validMoves.includes(idReplaced)) {
-                        // Swap Emoji and Color
-                        let emojiReplaced = candies[idReplaced].innerHTML;
-                        let colorReplaced = candies[idReplaced].style.backgroundColor;
-
-                        candies[idReplaced].innerHTML = emojiDragged;
-                        candies[idReplaced].style.backgroundColor = colorDragged;
-
-                        candies[idDragged].innerHTML = emojiReplaced;
-                        candies[idDragged].style.backgroundColor = colorReplaced;
-                        
-                        setTimeout(checkMatches, 100);
-                    }
+                    attemptMove();
                 }
             });
         });
 
-        function checkMatches() {
-            // Horizontal check
-            for (let i = 0; i < 62; i++) {
-                let row = [i, i+1, i+2];
-                let emoji = candies[i].innerHTML;
-                if (emoji === '') continue;
-                if (i % 8 > 5) continue;
-                if (row.every(idx => candies[idx].innerHTML === emoji)) {
-                    score += 10;
-                    scoreDisplay.innerHTML = score;
-                    row.forEach(idx => {
-                        candies[idx].innerHTML = '';
-                        candies[idx].style.backgroundColor = 'transparent';
-                    });
+        function attemptMove() {
+            let validMoves = [idDragged-1, idDragged+1, idDragged-width, idDragged+width];
+            if (!validMoves.includes(idReplaced)) return;
+
+            // Step 1: Temporary Swap
+            swapCandies(idDragged, idReplaced);
+
+            // Step 2: Check if this swap creates a match
+            if (!hasMatch()) {
+                // Step 3: No match? Swap back after a short delay
+                setTimeout(() => {
+                    swapCandies(idDragged, idReplaced);
+                }, 300);
+            } else {
+                checkMatches();
+            }
+        }
+
+        function swapCandies(id1, id2) {
+            let tempEmoji = candies[id1].innerHTML;
+            let tempColor = candies[id1].style.backgroundColor;
+
+            candies[id1].innerHTML = candies[id2].innerHTML;
+            candies[id1].style.backgroundColor = candies[id2].style.backgroundColor;
+
+            candies[id2].innerHTML = tempEmoji;
+            candies[id2].style.backgroundColor = tempColor;
+        }
+
+        function hasMatch() {
+            // Check rows
+            for (let i = 0; i < 64; i++) {
+                if (i % 8 < 6) {
+                    if (candies[i].innerHTML !== '' &&
+                        candies[i].innerHTML === candies[i+1].innerHTML &&
+                        candies[i].innerHTML === candies[i+2].innerHTML) return true;
+                }
+                if (i < 48) {
+                    if (candies[i].innerHTML !== '' &&
+                        candies[i].innerHTML === candies[i+width].innerHTML &&
+                        candies[i].innerHTML === candies[i+width*2].innerHTML) return true;
                 }
             }
-            // Vertical check
+            return false;
+        }
+
+        function checkMatches() {
+            // Horizontal
+            for (let i = 0; i < 62; i++) {
+                if (i % 8 > 5) continue;
+                let row = [i, i+1, i+2];
+                let emoji = candies[i].innerHTML;
+                if (emoji && row.every(idx => candies[idx].innerHTML === emoji)) {
+                    score += 10;
+                    row.forEach(idx => candies[idx].innerHTML = '');
+                }
+            }
+            // Vertical
             for (let i = 0; i < 48; i++) {
                 let col = [i, i+width, i+width*2];
                 let emoji = candies[i].innerHTML;
-                if (emoji === '') continue;
-                if (col.every(idx => candies[idx].innerHTML === emoji)) {
+                if (emoji && col.every(idx => candies[idx].innerHTML === emoji)) {
                     score += 10;
-                    scoreDisplay.innerHTML = score;
-                    col.forEach(idx => {
-                        candies[idx].innerHTML = '';
-                        candies[idx].style.backgroundColor = 'transparent';
-                    });
+                    col.forEach(idx => candies[idx].innerHTML = '');
                 }
             }
+            scoreDisplay.innerHTML = score;
         }
 
         function moveDown() {
@@ -148,7 +152,10 @@
                     candies[i].innerHTML = '';
                     candies[i].style.backgroundColor = 'transparent';
                 }
-                if (i < 8 && candies[i].innerHTML === '') {
+            }
+            // Refill top row
+            for (let i = 0; i < 8; i++) {
+                if (candies[i].innerHTML === '') {
                     let randomType = candyTypes[Math.floor(Math.random() * candyTypes.length)];
                     candies[i].innerHTML = randomType.emoji;
                     candies[i].style.backgroundColor = randomType.color;
@@ -156,10 +163,10 @@
             }
         }
 
-        window.setInterval(() => {
+        setInterval(() => {
             checkMatches();
             moveDown();
-        }, 150);
+        }, 100);
 
     </script>
 </body>
