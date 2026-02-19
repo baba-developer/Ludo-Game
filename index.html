@@ -67,7 +67,6 @@
             background: #fff; touch-action: none; transition: transform 0.1s;
             cursor: pointer;
         }
-        /* Bomb look */
         .bomb { 
             background: #ffcc00 !important; 
             box-shadow: 0 0 15px #ffcc00, inset 0 0 5px white; 
@@ -127,9 +126,9 @@
         </div>
         <div class="info-panel">
             <div>LVL: <b id="lvlShow">1</b></div>
-            <div>GOAL: <b id="targetShow">200</b></div>
+            <div>GOAL: <b id="targetShow">500</b></div>
             <div>SCORE: <b id="scoreShow">0</b></div>
-            <div style="color: #f9d342;">MOVES: <b id="movesShow">25</b></div>
+            <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
         </div>
         <div id="grid"></div>
         <p style="font-size: 10px; color: #aaa;">Tip: Double tap Bomb to blast!</p>
@@ -140,7 +139,7 @@
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let soundEnabled = (localStorage.getItem('fb_sound') !== 'false');
-        let currentLvl = 1, score = 0, moves = 25, target = 200, candies = [];
+        let currentLvl = 1, score = 0, moves = 20, target = 500, candies = [];
         let isGameActive = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -176,8 +175,7 @@
         function showWinModal() {
             isGameActive = false;
             document.getElementById('win-modal').style.display = 'flex';
-            document.getElementById('win-msg').innerText = `You scored ${score} points!`;
-            document.getElementById('nextLvlBtn').style.display = currentLvl >= 50 ? 'none' : 'block';
+            document.getElementById('win-msg').innerText = `Target: ${target} | Your Score: ${score}`;
         }
 
         function nextLevelAction() {
@@ -213,7 +211,12 @@
         }
 
         function startLevel(lvl) {
-            currentLvl = lvl; score = 0; target = 200 + (lvl*50); moves = 25;
+            currentLvl = lvl; 
+            score = 0; 
+            // HARDER DIFFICULTY FORMULA
+            target = 500 + (lvl * 450); 
+            moves = 20 + Math.min(lvl, 15); 
+            
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
@@ -251,7 +254,6 @@
             candies.forEach(c => {
                 c.onpointerdown = (e) => {
                     startID = parseInt(e.target.id);
-                    // Double Tap Detect for Bomb
                     let now = new Date().getTime();
                     if (now - lastTap < 300) {
                         if(candies[startID].classList.contains('bomb')) {
@@ -283,15 +285,12 @@
                 let b1 = candies[id1].classList.contains('bomb'), b2 = candies[id2].classList.contains('bomb');
                 
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                
-                // Swap Bomb Classes
                 if(b1) { candies[id1].classList.remove('bomb'); candies[id2].classList.add('bomb'); }
                 if(b2) { candies[id2].classList.remove('bomb'); candies[id1].classList.add('bomb'); }
 
                 if (checkMatches() || b1 || b2) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
-                    // If bomb was moved, blast it immediately even if no match
                     if(b1) clearCandy(id2);
                     else if(b2) clearCandy(id1);
                 } else {
@@ -309,8 +308,6 @@
             let hasMatch = false;
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
-                
-                // Horizontal
                 if(i % 8 < 6) {
                     if(candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
                         let matchLen = 3;
@@ -320,7 +317,6 @@
                         hasMatch = true;
                     }
                 }
-                // Vertical
                 if(i < 48) {
                     if(candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
                         let matchLen = 3;
@@ -347,12 +343,11 @@
                 candies[idx].innerHTML = '';
                 let row = Math.floor(idx/8);
                 let col = idx % 8;
-                // Blast Row and Column
                 for(let i=0; i<8; i++) {
                     let rIdx = row * 8 + i;
                     let cIdx = i * 8 + col;
-                    if(candies[rIdx].innerHTML !== '') { score += 15; candies[rIdx].innerHTML = ''; }
-                    if(candies[cIdx].innerHTML !== '') { score += 15; candies[cIdx].innerHTML = ''; }
+                    if(candies[rIdx].innerHTML !== '') { score += 20; candies[rIdx].innerHTML = ''; }
+                    if(candies[cIdx].innerHTML !== '') { score += 20; candies[cIdx].innerHTML = ''; }
                 }
                 playSound(100, 'sawtooth');
             } else {
@@ -368,8 +363,6 @@
             checkMatches();
             document.getElementById('scoreShow').innerText = score;
             
-            // Gravity & Refill
-            let shifted = false;
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
                     candies[i+8].innerHTML = candies[i].innerHTML;
@@ -378,7 +371,6 @@
                         candies[i].classList.remove('bomb');
                     }
                     candies[i].innerHTML = '';
-                    shifted = true;
                 }
             }
             for(let i=0; i<64; i++) {
@@ -392,13 +384,16 @@
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
-                isGameActive = false; alert("GAME OVER!"); backToMenu();
+                isGameActive = false;
+                alert("OUT OF MOVES! TRY AGAIN.");
+                backToMenu();
             }
         }, 200);
 
         function backToMenu() {
             isGameActive = false;
             document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('win-modal').style.display = 'none';
             document.getElementById('main-menu').style.display = 'flex';
         }
     </script>
