@@ -140,7 +140,7 @@
             <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
         </div>
         <div id="grid"></div>
-        <p style="font-size: 10px; color: #aaa;">Tip: Match fruits to break Ice blocks!</p>
+        <p style="font-size: 10px; color: #aaa;">Tip: Match fruits to break Ice on bottom lines!</p>
         <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
     </div>
 
@@ -242,9 +242,11 @@
                 const c = document.createElement('div');
                 c.className = 'candy'; c.id = i;
                 
-                // Ice logic: random ice based on level
-                if(Math.random() < 0.1 + (currentLvl * 0.02)) {
-                    c.classList.add('ice');
+                // UPDATE: Ice logic only for indices 48-63 (End 2 lines)
+                if(i >= 48) {
+                    if(Math.random() < 0.2 + (currentLvl * 0.03)) {
+                        c.classList.add('ice');
+                    }
                 }
 
                 let fruit;
@@ -290,7 +292,6 @@
         }
 
         function handleMove(id1, id2) {
-            // Ice blocks cannot be moved
             if(candies[id1].classList.contains('ice') || candies[id2].classList.contains('ice')) {
                 playSound(100, 'sine');
                 return;
@@ -330,7 +331,6 @@
 
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
-                // Horizontal
                 if(i % 8 < 6) {
                     if(candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
                         let matchLen = 3;
@@ -340,7 +340,6 @@
                         hasMatch = true;
                     }
                 }
-                // Vertical
                 if(i < 48) {
                     if(candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
                         let matchLen = 3;
@@ -351,7 +350,6 @@
                     }
                 }
             }
-            
             toClear.forEach(idx => clearCandy(idx));
             return hasMatch;
         }
@@ -364,12 +362,11 @@
         }
 
         function clearCandy(idx) {
-            // Breaking Ice logic
             if(candies[idx].classList.contains('ice')) {
                 candies[idx].classList.remove('ice');
-                score += 50; // Bonus for ice break
+                score += 50; 
                 playSound(600, 'sine');
-                return; // Fruit stays, only ice breaks
+                return;
             }
 
             if(candies[idx].classList.contains('bomb')) {
@@ -397,7 +394,6 @@
             checkMatches();
             document.getElementById('scoreShow').innerText = score;
             
-            // Gravity Logic (Ignoring frozen ice blocks)
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && 
                    candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
@@ -409,7 +405,6 @@
                     candies[i].innerHTML = '';
                 }
             }
-            // Refill
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) {
                     candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
