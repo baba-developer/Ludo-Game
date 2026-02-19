@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Scrolling Map Edition</title>
+    <title>Frutix Blast - Star Edition</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -35,7 +35,7 @@
 
         #main-menu { justify-content: center; }
 
-        /* Zig-Zag Level Map Styling */
+        /* Level Map Stars Styling */
         .map-container {
             width: 100%; height: 75vh; overflow-y: auto; 
             margin-top: 20px; padding: 40px 0;
@@ -44,32 +44,35 @@
         .map-container::-webkit-scrollbar { display: none; }
 
         .level-path {
-            display: flex; flex-direction: column-reverse; /* Level 1 niche se start hoga */
+            display: flex; flex-direction: column-reverse;
             align-items: center; width: 100%;
         }
 
         .level-node {
-            width: 65px; height: 65px; margin: 25px 0;
+            width: 65px; height: 65px; margin: 35px 0;
             background: #e94560; color: white; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
             font-size: 22px; font-weight: bold; border: 4px solid #fff;
             box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
             cursor: pointer; position: relative; transition: 0.2s;
         }
+        
+        /* Stars under the node */
+        .node-stars {
+            position: absolute; bottom: -28px; width: 80px; 
+            text-align: center; font-size: 14px; color: #f9d342;
+        }
 
-        /* Zig-Zag Position Logic */
-        .level-node:nth-child(4n+1) { transform: translateX(-60px); } /* Left */
-        .level-node:nth-child(4n+2) { transform: translateX(0px); }   /* Center */
-        .level-node:nth-child(4n+3) { transform: translateX(60px); }  /* Right */
-        .level-node:nth-child(4n+4) { transform: translateX(0px); }   /* Center */
+        .level-node:nth-child(4n+1) { transform: translateX(-60px); }
+        .level-node:nth-child(4n+2) { transform: translateX(0px); }
+        .level-node:nth-child(4n+3) { transform: translateX(60px); }
+        .level-node:nth-child(4n+4) { transform: translateX(0px); }
 
         .level-node.locked { background: #444; border-color: #666; opacity: 0.6; box-shadow: none; }
-        .level-node:active { transform: scale(0.9) !important; }
 
-        .dev-tag-menu {
-            position: absolute; bottom: 30px; color: rgba(255, 255, 255, 0.4);
-            font-size: 12px; letter-spacing: 2px; font-weight: bold;
-        }
+        /* Win Modal Star Styling */
+        .win-stars { font-size: 40px; color: #f9d342; margin: 10px 0; }
+        .empty-star { color: #444; }
 
         #settings-modal, #win-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -97,22 +100,11 @@
         .candy { 
             width: 40px; height: 40px; border-radius: 8px; display: flex; 
             align-items: center; justify-content: center; font-size: 24px; 
-            background: #fff; touch-action: none; transition: transform 0.1s, background 0.3s;
+            background: #fff; touch-action: none; transition: transform 0.1s;
             cursor: pointer; position: relative;
         }
-
-        .ice {
-            background: #a2d2ff !important;
-            border: 2px solid #fff;
-            box-shadow: inset 0 0 10px rgba(255,255,255,0.8);
-            z-index: 1;
-        }
-
-        .bomb { 
-            background: #ffcc00 !important; 
-            box-shadow: 0 0 15px #ffcc00, inset 0 0 5px white; 
-            animation: pulse 0.6s infinite alternate;
-        }
+        .ice { background: #a2d2ff !important; border: 2px solid #fff; z-index: 1; }
+        .bomb { background: #ffcc00 !important; animation: pulse 0.6s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
@@ -130,11 +122,10 @@
         <button class="btn" onclick="playLastUnlocked()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">CONTINUE</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
-        <div class="dev-tag-menu">POWERED BY BABA-DEVELOPER</div>
     </div>
 
     <div id="level-menu">
-        <h2 style="color:white; margin-top:20px;">SELECT LEVEL</h2>
+        <h2 style="color:white; margin-top:20px;">MAP</h2>
         <div class="map-container">
             <div class="level-path" id="levelContainer"></div>
         </div>
@@ -142,15 +133,16 @@
     </div>
 
     <div id="win-modal">
-        <h1 style="color: #f9d342; font-size: 32px; margin: 0;">EXCELLENT!</h1>
-        <p id="win-msg" style="font-size: 18px; margin: 15px 0;">Level Complete</p>
-        <button class="btn" id="nextLvlBtn" onclick="nextLevelAction()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">NEXT LEVEL</button>
-        <button class="btn" onclick="closeWinModal()" style="background:#555; box-shadow: 0 4px #333;">BACK TO MENU</button>
+        <h1 style="color: #f9d342; font-size: 32px; margin: 0;">CLEARED!</h1>
+        <div id="starDisplay" class="win-stars"></div>
+        <p id="win-msg" style="font-size: 18px; margin: 15px 0;"></p>
+        <button class="btn" onclick="nextLevelAction()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">NEXT LEVEL</button>
+        <button class="btn" onclick="closeWinModal()" style="background:#555;">BACK TO MENU</button>
     </div>
 
     <div id="settings-modal">
         <h2 id="modal-title">SETTINGS</h2>
-        <button class="btn" id="soundBtn" onclick="toggleSound()" style="background:#f39c12; box-shadow: 0 4px #d68910;">SOUND: ON</button>
+        <button class="btn" id="soundBtn" onclick="toggleSound()" style="background:#f39c12;">SOUND: ON</button>
         <button class="btn" onclick="resetProgress()" style="font-size: 12px; background:#444;">RESET ALL DATA</button>
         <button class="btn" onclick="toggleSettings(false)">CLOSE</button>
     </div>
@@ -173,59 +165,14 @@
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
+        let starData = JSON.parse(localStorage.getItem('fb_stars')) || {}; 
         let soundEnabled = (localStorage.getItem('fb_sound') !== 'false');
-        let currentLvl = 1, score = 0, moves = 20, target = 500, candies = [];
-        let isGameActive = false;
+        let currentLvl = 1, score = 0, moves = 20, maxMoves = 20, target = 500, candies = [], isGameActive = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound(freq, type) {
-            if(!soundEnabled) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        }
+        function playSound(freq, type) { if(!soundEnabled) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1); osc.start(); osc.stop(audioCtx.currentTime + 0.1); }
 
-        window.onload = () => {
-            document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-            setTimeout(() => {
-                document.getElementById('splash').style.display = 'none';
-                document.getElementById('main-menu').style.display = 'flex';
-            }, 2000);
-        };
-
-        function toggleSound() {
-            soundEnabled = !soundEnabled;
-            localStorage.setItem('fb_sound', soundEnabled);
-            document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-        }
-
-        function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
-        function pauseGame() { isGameActive = false; document.getElementById('modal-title').innerText = "PAUSED"; toggleSettings(true); }
-        function restartLevel() { toggleSettings(false); startLevel(currentLvl); }
-        function playLastUnlocked() { startLevel(unlockedLevel); }
-
-        function showWinModal() {
-            isGameActive = false;
-            document.getElementById('win-modal').style.display = 'flex';
-            document.getElementById('win-msg').innerText = `Target: ${target} | Your Score: ${score}`;
-        }
-
-        function nextLevelAction() {
-            document.getElementById('win-modal').style.display = 'none';
-            startLevel(currentLvl + 1);
-        }
-
-        function closeWinModal() {
-            document.getElementById('win-modal').style.display = 'none';
-            backToMenu();
-        }
-
-        function resetProgress() {
-            if(confirm("Everything will be reset!")) { localStorage.setItem('fb_unlocked', 1); location.reload(); }
-        }
+        window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }, 2000); };
 
         function showLevelMenu() {
             document.getElementById('main-menu').style.display = 'none';
@@ -234,38 +181,48 @@
             container.innerHTML = '';
             for(let i=1; i<=50; i++) {
                 const b = document.createElement('div');
-                b.innerText = i; 
                 b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
+                b.innerHTML = i > unlockedLevel ? '🔒' : i;
+                
+                // Add star rating visualization to map
                 if(i <= unlockedLevel) {
+                    const stars = document.createElement('div');
+                    stars.className = 'node-stars';
+                    let sCount = starData[i] || 0;
+                    stars.innerHTML = '⭐'.repeat(sCount) + '<span style="opacity:0.2">' + '⭐'.repeat(3-sCount) + '</span>';
+                    b.appendChild(stars);
                     b.onclick = () => startLevel(i);
-                } else {
-                    b.innerHTML = '🔒';
                 }
                 container.appendChild(b);
             }
-            // Auto scroll to current level
-            setTimeout(() => {
-                const current = document.querySelector('.level-node:not(.locked)');
-                if(current) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
         }
 
-        function hideLevelMenu() {
-            document.getElementById('level-menu').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
+        function calculateStars() {
+            let ratio = moves / maxMoves;
+            if (ratio > 0.4) return 3;
+            if (ratio > 0.15) return 2;
+            return 1;
+        }
+
+        function showWinModal() {
+            isGameActive = false;
+            let earnedStars = calculateStars();
+            if(!starData[currentLvl] || earnedStars > starData[currentLvl]) {
+                starData[currentLvl] = earnedStars;
+                localStorage.setItem('fb_stars', JSON.stringify(starData));
+            }
+            document.getElementById('starDisplay').innerHTML = '⭐'.repeat(earnedStars) + '<span class="empty-star">' + '⭐'.repeat(3-earnedStars) + '</span>';
+            document.getElementById('win-msg').innerText = `Target: ${target} | Score: ${score}`;
+            document.getElementById('win-modal').style.display = 'flex';
         }
 
         function startLevel(lvl) {
-            currentLvl = lvl; 
-            score = 0; 
-            target = 500 + (lvl * 450); 
-            moves = 20 + Math.min(lvl, 15); 
-            
+            currentLvl = lvl; score = 0; target = 500 + (lvl * 450); 
+            maxMoves = 20 + Math.min(lvl, 15); moves = maxMoves;
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            document.getElementById('scoreShow').innerText = "0";
             document.getElementById('lvlShow').innerText = lvl;
             document.getElementById('targetShow').innerText = target;
             document.getElementById('movesShow').innerText = moves;
@@ -275,14 +232,10 @@
         function initGrid() {
             const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
             for(let i=0; i<64; i++) {
-                const c = document.createElement('div');
-                c.className = 'candy'; c.id = i;
+                const c = document.createElement('div'); c.className = 'candy'; c.id = i;
                 if(i >= 48 && Math.random() < 0.2 + (currentLvl * 0.03)) c.classList.add('ice');
-                let fruit;
-                do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } 
-                while (wouldCreateMatch(i, fruit));
-                c.innerHTML = fruit;
-                grid.appendChild(c); candies.push(c);
+                let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (wouldCreateMatch(i, fruit));
+                c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
             }
             addTouchLogic();
         }
@@ -293,46 +246,17 @@
             return false;
         }
 
-        function addTouchLogic() {
-            let startID;
-            let lastTap = 0;
-            candies.forEach(c => {
-                c.onpointerdown = (e) => {
-                    startID = parseInt(e.target.id);
-                    let now = new Date().getTime();
-                    if (now - lastTap < 300 && candies[startID].classList.contains('bomb')) {
-                        clearCandy(startID); moves--; document.getElementById('movesShow').innerText = moves;
-                    }
-                    lastTap = now;
-                };
-                c.onpointerup = (e) => {
-                    if (!isGameActive) return;
-                    let targetEl = document.elementFromPoint(e.clientX, e.clientY);
-                    if (targetEl && targetEl.className.includes('candy')) handleMove(startID, parseInt(targetEl.id));
-                };
-            });
-        }
-
         function handleMove(id1, id2) {
             if(isNaN(id1) || isNaN(id2) || candies[id1].classList.contains('ice') || candies[id2].classList.contains('ice')) return;
             let adj = [id1-1, id1+1, id1-8, id1+8];
-            if ((id1 % 8 === 0 && id2 === id1 - 1) || (id1 % 8 === 7 && id2 === id1 + 1)) return;
             if (adj.includes(id2)) {
                 let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-                let b1 = candies[id1].classList.contains('bomb'), b2 = candies[id2].classList.contains('bomb');
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                if(b1) { candies[id1].classList.remove('bomb'); candies[id2].classList.add('bomb'); }
-                if(b2) { candies[id2].classList.remove('bomb'); candies[id1].classList.add('bomb'); }
-                if (checkMatches() || b1 || b2) {
+                if (checkMatches()) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
-                    if(b1) clearCandy(id2); else if(b2) clearCandy(id1);
                 } else {
-                    setTimeout(() => { 
-                        candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; 
-                        if(b1) { candies[id1].classList.add('bomb'); candies[id2].classList.remove('bomb'); }
-                        if(b2) { candies[id2].classList.add('bomb'); candies[id1].classList.remove('bomb'); }
-                    }, 200);
+                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
                 }
             }
         }
@@ -342,35 +266,17 @@
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
                 if(i % 8 < 6 && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                    let len = (i%8<5 && candies[i].innerHTML === candies[i+3].innerHTML) ? 4 : 3;
-                    if(len >= 4) makeBomb(i+1);
-                    for(let j=0; j<len; j++) toClear.add(i+j);
-                    hasMatch = true;
+                    for(let j=0; j<3; j++) toClear.add(i+j); hasMatch = true;
                 }
                 if(i < 48 && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                    let len = (i<40 && candies[i].innerHTML === candies[i+24].innerHTML) ? 4 : 3;
-                    if(len >= 4) makeBomb(i+8);
-                    for(let j=0; j<len; j++) toClear.add(i+j*8);
-                    hasMatch = true;
+                    for(let j=0; j<3; j++) toClear.add(i+j*8); hasMatch = true;
                 }
             }
-            toClear.forEach(idx => clearCandy(idx));
+            toClear.forEach(idx => {
+                if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); score += 50; }
+                else if(candies[idx].innerHTML !== '') { score += 10; candies[idx].innerHTML = ''; }
+            });
             return hasMatch;
-        }
-
-        function makeBomb(idx) { setTimeout(() => { candies[idx].innerHTML = '💣'; candies[idx].classList.add('bomb'); }, 100); }
-
-        function clearCandy(idx) {
-            if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); score += 50; return; }
-            if(candies[idx].classList.contains('bomb')) {
-                candies[idx].classList.remove('bomb'); candies[idx].innerHTML = '';
-                let r = Math.floor(idx/8), c = idx % 8;
-                for(let i=0; i<8; i++) {
-                    if(candies[r*8+i].innerHTML !== '') { score += 20; candies[r*8+i].innerHTML = ''; }
-                    if(candies[i*8+c].innerHTML !== '') { score += 20; candies[i*8+c].innerHTML = ''; }
-                }
-                playSound(100, 'sawtooth');
-            } else if(candies[idx].innerHTML !== '') { score += 10; candies[idx].innerHTML = ''; }
         }
 
         setInterval(() => {
@@ -379,9 +285,7 @@
             document.getElementById('scoreShow').innerText = score;
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
-                    candies[i+8].innerHTML = candies[i].innerHTML;
-                    if(candies[i].classList.contains('bomb')) { candies[i+8].classList.add('bomb'); candies[i].classList.remove('bomb'); }
-                    candies[i].innerHTML = '';
+                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
                 }
             }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
@@ -389,18 +293,30 @@
             if(score >= target) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
-            } else if(moves <= 0) {
-                isGameActive = false; alert("OUT OF MOVES!"); backToMenu();
-            }
-        }, 200);
+            } else if(moves <= 0) { isGameActive = false; alert("OUT OF MOVES!"); backToMenu(); }
+        }, 250);
 
-        function backToMenu() {
-            isGameActive = false;
-            document.getElementById('game-ui').style.display = 'none';
-            document.getElementById('win-modal').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'none';
-            document.getElementById('main-menu').style.display = 'flex';
+        function addTouchLogic() {
+            let startID;
+            candies.forEach(c => {
+                c.onpointerdown = (e) => startID = parseInt(e.target.id);
+                c.onpointerup = (e) => {
+                    let targetEl = document.elementFromPoint(e.clientX, e.clientY);
+                    if (targetEl && targetEl.className.includes('candy')) handleMove(startID, parseInt(targetEl.id));
+                };
+            });
         }
+
+        function toggleSound() { soundEnabled = !soundEnabled; localStorage.setItem('fb_sound', soundEnabled); document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`; }
+        function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
+        function pauseGame() { isGameActive = false; document.getElementById('modal-title').innerText = "PAUSED"; toggleSettings(true); }
+        function restartLevel() { toggleSettings(false); startLevel(currentLvl); }
+        function playLastUnlocked() { startLevel(unlockedLevel); }
+        function nextLevelAction() { document.getElementById('win-modal').style.display = 'none'; startLevel(currentLvl + 1); }
+        function closeWinModal() { document.getElementById('win-modal').style.display = 'none'; backToMenu(); }
+        function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-modal').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+        function resetProgress() { if(confirm("Reset all data?")) { localStorage.clear(); location.reload(); } }
     </script>
 </body>
 </html>
