@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Pro Ice Edition</title>
+    <title>Frutix Blast - Scrolling Map Edition</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -30,8 +30,41 @@
         #main-menu, #level-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 8000;
+            align-items: center; z-index: 8000;
         }
+
+        #main-menu { justify-content: center; }
+
+        /* Zig-Zag Level Map Styling */
+        .map-container {
+            width: 100%; height: 75vh; overflow-y: auto; 
+            margin-top: 20px; padding: 40px 0;
+            scrollbar-width: none;
+        }
+        .map-container::-webkit-scrollbar { display: none; }
+
+        .level-path {
+            display: flex; flex-direction: column-reverse; /* Level 1 niche se start hoga */
+            align-items: center; width: 100%;
+        }
+
+        .level-node {
+            width: 65px; height: 65px; margin: 25px 0;
+            background: #e94560; color: white; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; font-weight: bold; border: 4px solid #fff;
+            box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
+            cursor: pointer; position: relative; transition: 0.2s;
+        }
+
+        /* Zig-Zag Position Logic */
+        .level-node:nth-child(4n+1) { transform: translateX(-60px); } /* Left */
+        .level-node:nth-child(4n+2) { transform: translateX(0px); }   /* Center */
+        .level-node:nth-child(4n+3) { transform: translateX(60px); }  /* Right */
+        .level-node:nth-child(4n+4) { transform: translateX(0px); }   /* Center */
+
+        .level-node.locked { background: #444; border-color: #666; opacity: 0.6; box-shadow: none; }
+        .level-node:active { transform: scale(0.9) !important; }
 
         .dev-tag-menu {
             position: absolute; bottom: 30px; color: rgba(255, 255, 255, 0.4);
@@ -68,7 +101,6 @@
             cursor: pointer; position: relative;
         }
 
-        /* Ice Block Styling */
         .ice {
             background: #a2d2ff !important;
             border: 2px solid #fff;
@@ -82,11 +114,6 @@
             animation: pulse 0.6s infinite alternate;
         }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
-        
-        .level-scroll-box { width: 90%; max-height: 70vh; overflow-y: auto; margin-top: 20px; border-radius: 15px; background: rgba(0,0,0,0.2); padding: 15px; border: 1px solid #4e31aa; }
-        .level-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .level-btn { aspect-ratio: 1/1; background: #e94560; color: white; border-radius: 12px; font-weight: bold; border: none; font-size: 16px; box-shadow: 0 3px #950101; }
-        .level-btn.locked { background: #444; opacity: 0.5; box-shadow: none; }
     </style>
 </head>
 <body>
@@ -98,12 +125,20 @@
     </div>
 
     <div id="main-menu">
-        <h1 style="color: #e94560; font-size: 45px;">FRUTIX</h1>
+        <h1 style="color: #e94560; font-size: 45px; margin-bottom: 20px;">FRUTIX</h1>
         <button class="btn" onclick="startLevel(1)">NEW GAME</button>
         <button class="btn" onclick="playLastUnlocked()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">CONTINUE</button>
         <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         <button class="btn" onclick="toggleSettings(true)" style="background:#4e31aa">SETTINGS</button>
         <div class="dev-tag-menu">POWERED BY BABA-DEVELOPER</div>
+    </div>
+
+    <div id="level-menu">
+        <h2 style="color:white; margin-top:20px;">SELECT LEVEL</h2>
+        <div class="map-container">
+            <div class="level-path" id="levelContainer"></div>
+        </div>
+        <button class="btn" style="background:#555; margin-bottom: 20px;" onclick="hideLevelMenu()">BACK</button>
     </div>
 
     <div id="win-modal">
@@ -120,14 +155,6 @@
         <button class="btn" onclick="toggleSettings(false)">CLOSE</button>
     </div>
 
-    <div id="level-menu">
-        <h1 style="color:white; margin-bottom:5px;">LEVELS</h1>
-        <div class="level-scroll-box">
-            <div class="level-grid" id="levelContainer"></div>
-        </div>
-        <button class="btn" style="background:#555; margin-top:20px;" onclick="hideLevelMenu()">BACK</button>
-    </div>
-
     <div id="game-ui">
         <div style="display: flex; justify-content: space-between; padding: 10px; width: 95%;">
             <button onclick="pauseGame()" style="background:#4e31aa; border:none; color:white; padding:5px 12px; border-radius:5px;">PAUSE</button>
@@ -140,7 +167,6 @@
             <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
         </div>
         <div id="grid"></div>
-        <p style="font-size: 10px; color: #aaa;">Tip: Match fruits to break Ice on bottom lines!</p>
         <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
     </div>
 
@@ -207,11 +233,21 @@
             const container = document.getElementById('levelContainer');
             container.innerHTML = '';
             for(let i=1; i<=50; i++) {
-                const b = document.createElement('button');
-                b.innerText = i; b.className = 'level-btn' + (i > unlockedLevel ? ' locked' : '');
-                b.onclick = i <= unlockedLevel ? () => startLevel(i) : null;
+                const b = document.createElement('div');
+                b.innerText = i; 
+                b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
+                if(i <= unlockedLevel) {
+                    b.onclick = () => startLevel(i);
+                } else {
+                    b.innerHTML = '🔒';
+                }
                 container.appendChild(b);
             }
+            // Auto scroll to current level
+            setTimeout(() => {
+                const current = document.querySelector('.level-node:not(.locked)');
+                if(current) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
 
         function hideLevelMenu() {
@@ -241,14 +277,7 @@
             for(let i=0; i<64; i++) {
                 const c = document.createElement('div');
                 c.className = 'candy'; c.id = i;
-                
-                // UPDATE: Ice logic only for indices 48-63 (End 2 lines)
-                if(i >= 48) {
-                    if(Math.random() < 0.2 + (currentLvl * 0.03)) {
-                        c.classList.add('ice');
-                    }
-                }
-
+                if(i >= 48 && Math.random() < 0.2 + (currentLvl * 0.03)) c.classList.add('ice');
                 let fruit;
                 do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } 
                 while (wouldCreateMatch(i, fruit));
@@ -271,154 +300,97 @@
                 c.onpointerdown = (e) => {
                     startID = parseInt(e.target.id);
                     let now = new Date().getTime();
-                    if (now - lastTap < 300) {
-                        if(candies[startID].classList.contains('bomb')) {
-                            clearCandy(startID);
-                            moves--;
-                            document.getElementById('movesShow').innerText = moves;
-                        }
+                    if (now - lastTap < 300 && candies[startID].classList.contains('bomb')) {
+                        clearCandy(startID); moves--; document.getElementById('movesShow').innerText = moves;
                     }
                     lastTap = now;
                 };
                 c.onpointerup = (e) => {
                     if (!isGameActive) return;
                     let targetEl = document.elementFromPoint(e.clientX, e.clientY);
-                    if (targetEl && targetEl.className.includes('candy')) {
-                        let endID = parseInt(targetEl.id);
-                        handleMove(startID, endID);
-                    }
+                    if (targetEl && targetEl.className.includes('candy')) handleMove(startID, parseInt(targetEl.id));
                 };
             });
         }
 
         function handleMove(id1, id2) {
-            if(candies[id1].classList.contains('ice') || candies[id2].classList.contains('ice')) {
-                playSound(100, 'sine');
-                return;
-            }
-
+            if(isNaN(id1) || isNaN(id2) || candies[id1].classList.contains('ice') || candies[id2].classList.contains('ice')) return;
             let adj = [id1-1, id1+1, id1-8, id1+8];
-            if (id1 % 8 === 0 && id2 === id1 - 1) return;
-            if (id1 % 8 === 7 && id2 === id1 + 1) return;
-
+            if ((id1 % 8 === 0 && id2 === id1 - 1) || (id1 % 8 === 7 && id2 === id1 + 1)) return;
             if (adj.includes(id2)) {
                 let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
                 let b1 = candies[id1].classList.contains('bomb'), b2 = candies[id2].classList.contains('bomb');
-                
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
                 if(b1) { candies[id1].classList.remove('bomb'); candies[id2].classList.add('bomb'); }
                 if(b2) { candies[id2].classList.remove('bomb'); candies[id1].classList.add('bomb'); }
-
                 if (checkMatches() || b1 || b2) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
-                    if(b1) clearCandy(id2);
-                    else if(b2) clearCandy(id1);
+                    if(b1) clearCandy(id2); else if(b2) clearCandy(id1);
                 } else {
                     setTimeout(() => { 
                         candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; 
                         if(b1) { candies[id1].classList.add('bomb'); candies[id2].classList.remove('bomb'); }
                         if(b2) { candies[id2].classList.add('bomb'); candies[id1].classList.remove('bomb'); }
                     }, 200);
-                    playSound(150, 'sine');
                 }
             }
         }
 
         function checkMatches() {
-            let hasMatch = false;
-            let toClear = new Set();
-
+            let hasMatch = false, toClear = new Set();
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
-                if(i % 8 < 6) {
-                    if(candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                        let matchLen = 3;
-                        if(i % 8 < 5 && candies[i].innerHTML === candies[i+3].innerHTML) matchLen = 4;
-                        if(matchLen >= 4) makeBomb(i+1);
-                        for(let j=0; j<matchLen; j++) toClear.add(i+j);
-                        hasMatch = true;
-                    }
+                if(i % 8 < 6 && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
+                    let len = (i%8<5 && candies[i].innerHTML === candies[i+3].innerHTML) ? 4 : 3;
+                    if(len >= 4) makeBomb(i+1);
+                    for(let j=0; j<len; j++) toClear.add(i+j);
+                    hasMatch = true;
                 }
-                if(i < 48) {
-                    if(candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                        let matchLen = 3;
-                        if(i < 40 && candies[i].innerHTML === candies[i+24].innerHTML) matchLen = 4;
-                        if(matchLen >= 4) makeBomb(i+8);
-                        for(let j=0; j<matchLen; j++) toClear.add(i+j*8);
-                        hasMatch = true;
-                    }
+                if(i < 48 && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
+                    let len = (i<40 && candies[i].innerHTML === candies[i+24].innerHTML) ? 4 : 3;
+                    if(len >= 4) makeBomb(i+8);
+                    for(let j=0; j<len; j++) toClear.add(i+j*8);
+                    hasMatch = true;
                 }
             }
             toClear.forEach(idx => clearCandy(idx));
             return hasMatch;
         }
 
-        function makeBomb(idx) {
-            setTimeout(() => {
-                candies[idx].innerHTML = '💣';
-                candies[idx].classList.add('bomb');
-            }, 100);
-        }
+        function makeBomb(idx) { setTimeout(() => { candies[idx].innerHTML = '💣'; candies[idx].classList.add('bomb'); }, 100); }
 
         function clearCandy(idx) {
-            if(candies[idx].classList.contains('ice')) {
-                candies[idx].classList.remove('ice');
-                score += 50; 
-                playSound(600, 'sine');
-                return;
-            }
-
+            if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); score += 50; return; }
             if(candies[idx].classList.contains('bomb')) {
-                candies[idx].classList.remove('bomb');
-                candies[idx].innerHTML = '';
-                let row = Math.floor(idx/8);
-                let col = idx % 8;
+                candies[idx].classList.remove('bomb'); candies[idx].innerHTML = '';
+                let r = Math.floor(idx/8), c = idx % 8;
                 for(let i=0; i<8; i++) {
-                    let rIdx = row * 8 + i;
-                    let cIdx = i * 8 + col;
-                    if(candies[rIdx].innerHTML !== '') { score += 20; candies[rIdx].innerHTML = ''; }
-                    if(candies[cIdx].innerHTML !== '') { score += 20; candies[cIdx].innerHTML = ''; }
+                    if(candies[r*8+i].innerHTML !== '') { score += 20; candies[r*8+i].innerHTML = ''; }
+                    if(candies[i*8+c].innerHTML !== '') { score += 20; candies[i*8+c].innerHTML = ''; }
                 }
                 playSound(100, 'sawtooth');
-            } else {
-                if(candies[idx].innerHTML !== '') {
-                    score += 10;
-                    candies[idx].innerHTML = '';
-                }
-            }
+            } else if(candies[idx].innerHTML !== '') { score += 10; candies[idx].innerHTML = ''; }
         }
 
         setInterval(() => {
             if(!isGameActive) return;
             checkMatches();
             document.getElementById('scoreShow').innerText = score;
-            
             for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && 
-                   candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
+                if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
                     candies[i+8].innerHTML = candies[i].innerHTML;
-                    if(candies[i].classList.contains('bomb')) {
-                        candies[i+8].classList.add('bomb');
-                        candies[i].classList.remove('bomb');
-                    }
+                    if(candies[i].classList.contains('bomb')) { candies[i+8].classList.add('bomb'); candies[i].classList.remove('bomb'); }
                     candies[i].innerHTML = '';
                 }
             }
-            for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) {
-                    candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-                    candies[i].classList.remove('bomb');
-                }
-            }
-
+            for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+            
             if(score >= target) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
-                isGameActive = false;
-                alert("OUT OF MOVES! TRY AGAIN.");
-                backToMenu();
+                isGameActive = false; alert("OUT OF MOVES!"); backToMenu();
             }
         }, 200);
 
@@ -426,6 +398,7 @@
             isGameActive = false;
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('win-modal').style.display = 'none';
+            document.getElementById('level-menu').style.display = 'none';
             document.getElementById('main-menu').style.display = 'flex';
         }
     </script>
