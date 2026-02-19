@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Pro</title>
+    <title>Frutix Blast - Pro Ice Edition</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -64,9 +64,18 @@
         .candy { 
             width: 40px; height: 40px; border-radius: 8px; display: flex; 
             align-items: center; justify-content: center; font-size: 24px; 
-            background: #fff; touch-action: none; transition: transform 0.1s;
-            cursor: pointer;
+            background: #fff; touch-action: none; transition: transform 0.1s, background 0.3s;
+            cursor: pointer; position: relative;
         }
+
+        /* Ice Block Styling */
+        .ice {
+            background: #a2d2ff !important;
+            border: 2px solid #fff;
+            box-shadow: inset 0 0 10px rgba(255,255,255,0.8);
+            z-index: 1;
+        }
+
         .bomb { 
             background: #ffcc00 !important; 
             box-shadow: 0 0 15px #ffcc00, inset 0 0 5px white; 
@@ -131,7 +140,7 @@
             <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
         </div>
         <div id="grid"></div>
-        <p style="font-size: 10px; color: #aaa;">Tip: Double tap Bomb to blast!</p>
+        <p style="font-size: 10px; color: #aaa;">Tip: Match fruits to break Ice blocks!</p>
         <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
     </div>
 
@@ -213,7 +222,6 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             score = 0; 
-            // HARDER DIFFICULTY FORMULA
             target = 500 + (lvl * 450); 
             moves = 20 + Math.min(lvl, 15); 
             
@@ -233,6 +241,12 @@
             for(let i=0; i<64; i++) {
                 const c = document.createElement('div');
                 c.className = 'candy'; c.id = i;
+                
+                // Ice logic: random ice based on level
+                if(Math.random() < 0.1 + (currentLvl * 0.02)) {
+                    c.classList.add('ice');
+                }
+
                 let fruit;
                 do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } 
                 while (wouldCreateMatch(i, fruit));
@@ -276,6 +290,12 @@
         }
 
         function handleMove(id1, id2) {
+            // Ice blocks cannot be moved
+            if(candies[id1].classList.contains('ice') || candies[id2].classList.contains('ice')) {
+                playSound(100, 'sine');
+                return;
+            }
+
             let adj = [id1-1, id1+1, id1-8, id1+8];
             if (id1 % 8 === 0 && id2 === id1 - 1) return;
             if (id1 % 8 === 7 && id2 === id1 + 1) return;
@@ -306,27 +326,33 @@
 
         function checkMatches() {
             let hasMatch = false;
+            let toClear = new Set();
+
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
+                // Horizontal
                 if(i % 8 < 6) {
                     if(candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
                         let matchLen = 3;
                         if(i % 8 < 5 && candies[i].innerHTML === candies[i+3].innerHTML) matchLen = 4;
                         if(matchLen >= 4) makeBomb(i+1);
-                        for(let j=0; j<matchLen; j++) clearCandy(i+j);
+                        for(let j=0; j<matchLen; j++) toClear.add(i+j);
                         hasMatch = true;
                     }
                 }
+                // Vertical
                 if(i < 48) {
                     if(candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
                         let matchLen = 3;
                         if(i < 40 && candies[i].innerHTML === candies[i+24].innerHTML) matchLen = 4;
                         if(matchLen >= 4) makeBomb(i+8);
-                        for(let j=0; j<matchLen; j++) clearCandy(i+j*8);
+                        for(let j=0; j<matchLen; j++) toClear.add(i+j*8);
                         hasMatch = true;
                     }
                 }
             }
+            
+            toClear.forEach(idx => clearCandy(idx));
             return hasMatch;
         }
 
@@ -338,6 +364,14 @@
         }
 
         function clearCandy(idx) {
+            // Breaking Ice logic
+            if(candies[idx].classList.contains('ice')) {
+                candies[idx].classList.remove('ice');
+                score += 50; // Bonus for ice break
+                playSound(600, 'sine');
+                return; // Fruit stays, only ice breaks
+            }
+
             if(candies[idx].classList.contains('bomb')) {
                 candies[idx].classList.remove('bomb');
                 candies[idx].innerHTML = '';
@@ -363,8 +397,10 @@
             checkMatches();
             document.getElementById('scoreShow').innerText = score;
             
+            // Gravity Logic (Ignoring frozen ice blocks)
             for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
+                if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && 
+                   candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
                     candies[i+8].innerHTML = candies[i].innerHTML;
                     if(candies[i].classList.contains('bomb')) {
                         candies[i+8].classList.add('bomb');
@@ -373,8 +409,9 @@
                     candies[i].innerHTML = '';
                 }
             }
+            // Refill
             for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === '') {
+                if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) {
                     candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
                     candies[i].classList.remove('bomb');
                 }
