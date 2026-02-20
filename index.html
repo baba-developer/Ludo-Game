@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Music & Pro Mode</title>
+    <title>Frutix Blast - Star Progress</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -83,6 +83,24 @@
         }
 
         #game-ui { display: none; text-align: center; color: white; width: 100%; max-width: 360px; }
+        
+        /* Star Progress Bar Styles */
+        .progress-container {
+            width: 90%; height: 20px; background: #333; 
+            margin: 15px auto; border-radius: 10px; position: relative;
+            border: 2px solid #fff; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+        #progress-fill {
+            width: 0%; height: 100%; background: linear-gradient(to right, #f9d342, #ffae00);
+            border-radius: 8px; transition: width 0.3s ease;
+        }
+        .stars-row {
+            position: absolute; top: -10px; width: 100%;
+            display: flex; justify-content: space-around; pointer-events: none;
+        }
+        .star { font-size: 20px; filter: grayscale(1); transition: 0.3s transform; }
+        .star.active { filter: grayscale(0); transform: scale(1.3); text-shadow: 0 0 10px #f9d342; }
+
         .info-panel { 
             background: #0f3460; padding: 10px; border-radius: 15px; 
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; 
@@ -136,7 +154,8 @@
 
     <div id="win-modal">
         <h1 style="color: #f9d342; font-size: 32px; margin: 0;">EXCELLENT!</h1>
-        <p id="win-msg" style="font-size: 18px; margin: 15px 0;">Level Complete</p>
+        <div id="win-stars" style="font-size: 40px; margin: 10px;">⭐⭐⭐</div>
+        <p id="win-msg" style="font-size: 18px; margin: 10px 0;">Level Complete</p>
         <button class="btn" id="nextLvlBtn" onclick="nextLevelAction()" style="background:#28a745; box-shadow: 0 4px #1e7e34;">NEXT LEVEL</button>
         <button class="btn" onclick="closeWinModal()" style="background:#555; box-shadow: 0 4px #333;">BACK TO MENU</button>
     </div>
@@ -153,11 +172,21 @@
             <button onclick="pauseGame()" style="background:#4e31aa; border:none; color:white; padding:5px 12px; border-radius:5px;">PAUSE</button>
             <button onclick="restartLevel()" style="background:#4e31aa; border:none; color:white; padding:5px 12px; border-radius:5px;">RESTART</button>
         </div>
+
+        <div class="progress-container">
+            <div id="progress-fill"></div>
+            <div class="stars-row">
+                <span class="star" id="star1">⭐</span>
+                <span class="star" id="star2">⭐</span>
+                <span class="star" id="star3">⭐</span>
+            </div>
+        </div>
+
         <div class="info-panel">
             <div>LVL: <b id="lvlShow">1</b></div>
-            <div>COLLECT: <b id="targetShow">🍎 x 10</b></div>
-            <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
-            <div>LEFT: <b id="leftShow">10</b></div>
+            <div>COLLECT: <b id="targetShow">🍎 x 20</b></div>
+            <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
+            <div>LEFT: <b id="leftShow">20</b></div>
         </div>
         <div id="grid"></div>
         <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
@@ -167,17 +196,15 @@
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let soundEnabled = (localStorage.getItem('fb_sound') !== 'false');
-        let currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, candies = [];
+        let currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false;
         let musicStarted = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Background Music Synth
         function startBgMusic() {
             if (musicStarted || !soundEnabled) return;
             musicStarted = true;
-            
             const playNote = (freq, time, duration) => {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
@@ -185,14 +212,10 @@
                 osc.frequency.setValueAtTime(freq, time);
                 gain.gain.setValueAtTime(0.05, time);
                 gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(time);
-                osc.stop(time + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(time); osc.stop(time + duration);
             };
-
-            let startTime = audioCtx.currentTime;
-            const melody = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            const melody = [261.63, 329.63, 392.00, 523.25];
             setInterval(() => {
                 if(!soundEnabled) return;
                 for(let i=0; i<melody.length; i++) {
@@ -223,10 +246,7 @@
             soundEnabled = !soundEnabled;
             localStorage.setItem('fb_sound', soundEnabled);
             document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
-            if(soundEnabled) {
-                audioCtx.resume();
-                startBgMusic();
-            }
+            if(soundEnabled) { audioCtx.resume(); startBgMusic(); }
         }
 
         function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
@@ -263,17 +283,10 @@
                 const b = document.createElement('div');
                 b.innerText = i; 
                 b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-                if(i <= unlockedLevel) {
-                    b.onclick = () => startLevel(i);
-                } else {
-                    b.innerHTML = '🔒';
-                }
+                if(i <= unlockedLevel) { b.onclick = () => startLevel(i); } 
+                else { b.innerHTML = '🔒'; }
                 container.appendChild(b);
             }
-            setTimeout(() => {
-                const current = document.querySelector('.level-node:not(.locked)');
-                if(current) current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
         }
 
         function hideLevelMenu() {
@@ -284,9 +297,8 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            
-            // Higher Targets & More Moves for longer gameplay
             targetCount = 20 + (lvl * 10); 
+            initialTarget = targetCount;
             moves = 30 + (lvl * 5); 
             
             isGameActive = true;
@@ -294,22 +306,38 @@
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = lvl;
+            resetStars();
             updateTargetUI();
             document.getElementById('movesShow').innerText = moves;
             initGrid();
         }
 
+        function resetStars() {
+            document.getElementById('progress-fill').style.width = '0%';
+            document.getElementById('star1').classList.remove('active');
+            document.getElementById('star2').classList.remove('active');
+            document.getElementById('star3').classList.remove('active');
+        }
+
         function updateTargetUI() {
-            const targetLabel = document.getElementById('targetShow');
             const leftLabel = document.getElementById('leftShow');
-            targetLabel.innerText = `${targetFruit} x ${targetCount}`;
+            const targetLabel = document.getElementById('targetShow');
+            
+            targetLabel.innerText = `${targetFruit} x ${initialTarget}`;
             leftLabel.innerText = targetCount;
-            targetLabel.classList.add('pop-text');
+
+            // Update Progress Bar
+            let collected = initialTarget - targetCount;
+            let percent = (collected / initialTarget) * 100;
+            document.getElementById('progress-fill').style.width = percent + '%';
+
+            // Star Logic
+            if(percent >= 33) document.getElementById('star1').classList.add('active');
+            if(percent >= 66) document.getElementById('star2').classList.add('active');
+            if(percent >= 100) document.getElementById('star3').classList.add('active');
+
             leftLabel.classList.add('pop-text');
-            setTimeout(() => {
-                targetLabel.classList.remove('pop-text');
-                leftLabel.classList.remove('pop-text');
-            }, 200);
+            setTimeout(() => leftLabel.classList.remove('pop-text'), 200);
         }
 
         function initGrid() {
@@ -335,17 +363,8 @@
 
         function addTouchLogic() {
             let startID;
-            let lastTap = 0;
             candies.forEach(c => {
-                c.onpointerdown = (e) => {
-                    startID = parseInt(e.target.id);
-                    let now = new Date().getTime();
-                    if (now - lastTap < 300 && candies[startID].classList.contains('bomb')) {
-                        clearCandy(startID); moves--; document.getElementById('movesShow').innerText = moves;
-                    }
-                    lastTap = now;
-                    startBgMusic(); // Start music on interaction
-                };
+                c.onpointerdown = (e) => { startID = parseInt(e.target.id); startBgMusic(); };
                 c.onpointerup = (e) => {
                     if (!isGameActive) return;
                     let targetEl = document.elementFromPoint(e.clientX, e.clientY);
@@ -360,20 +379,12 @@
             if ((id1 % 8 === 0 && id2 === id1 - 1) || (id1 % 8 === 7 && id2 === id1 + 1)) return;
             if (adj.includes(id2)) {
                 let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-                let b1 = candies[id1].classList.contains('bomb'), b2 = candies[id2].classList.contains('bomb');
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                if(b1) { candies[id1].classList.remove('bomb'); candies[id2].classList.add('bomb'); }
-                if(b2) { candies[id2].classList.remove('bomb'); candies[id1].classList.add('bomb'); }
-                if (checkMatches() || b1 || b2) {
+                if (checkMatches()) {
                     moves--; document.getElementById('movesShow').innerText = moves;
                     playSound(400, 'square');
-                    if(b1) clearCandy(id2); else if(b2) clearCandy(id1);
                 } else {
-                    setTimeout(() => { 
-                        candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; 
-                        if(b1) { candies[id1].classList.add('bomb'); candies[id2].classList.remove('bomb'); }
-                        if(b2) { candies[id2].classList.add('bomb'); candies[id1].classList.remove('bomb'); }
-                    }, 200);
+                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
                 }
             }
         }
@@ -381,17 +392,13 @@
         function checkMatches() {
             let hasMatch = false, toClear = new Set();
             for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === '' || candies[i].innerHTML === '💣') continue;
+                if(candies[i].innerHTML === '') continue;
                 if(i % 8 < 6 && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                    let len = (i%8<5 && candies[i].innerHTML === candies[i+3].innerHTML) ? 4 : 3;
-                    if(len >= 4) makeBomb(i+1);
-                    for(let j=0; j<len; j++) toClear.add(i+j);
+                    for(let j=0; j<3; j++) toClear.add(i+j);
                     hasMatch = true;
                 }
                 if(i < 48 && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                    let len = (i<40 && candies[i].innerHTML === candies[i+24].innerHTML) ? 4 : 3;
-                    if(len >= 4) makeBomb(i+8);
-                    for(let j=0; j<len; j++) toClear.add(i+j*8);
+                    for(let j=0; j<3; j++) toClear.add(i+j*8);
                     hasMatch = true;
                 }
             }
@@ -399,28 +406,8 @@
             return hasMatch;
         }
 
-        function makeBomb(idx) { setTimeout(() => { candies[idx].innerHTML = '💣'; candies[idx].classList.add('bomb'); }, 100); }
-
         function clearCandy(idx) {
             if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); return; }
-            if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
-                targetCount--;
-                updateTargetUI();
-            }
-            if(candies[idx].classList.contains('bomb')) {
-                candies[idx].classList.remove('bomb'); candies[idx].innerHTML = '';
-                let r = Math.floor(idx/8), c = idx % 8;
-                for(let i=0; i<8; i++) {
-                    clearCandyEffect(r*8+i);
-                    clearCandyEffect(i*8+c);
-                }
-                playSound(100, 'sawtooth');
-            } else {
-                candies[idx].innerHTML = '';
-            }
-        }
-
-        function clearCandyEffect(idx) {
             if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
                 targetCount--;
                 updateTargetUI();
@@ -432,19 +419,19 @@
             if(!isGameActive) return;
             checkMatches();
             for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
+                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
                     candies[i+8].innerHTML = candies[i].innerHTML;
-                    if(candies[i].classList.contains('bomb')) { candies[i+8].classList.add('bomb'); candies[i].classList.remove('bomb'); }
                     candies[i].innerHTML = '';
                 }
             }
-            for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+            for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+            
             if(targetCount <= 0) {
                 targetCount = 0;
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
-                isGameActive = false; alert("GAME OVER! TARGET NOT MET."); backToMenu();
+                isGameActive = false; alert("GAME OVER!"); backToMenu();
             }
         }, 200);
 
@@ -452,7 +439,6 @@
             isGameActive = false;
             document.getElementById('game-ui').style.display = 'none';
             document.getElementById('win-modal').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'none';
             document.getElementById('main-menu').style.display = 'flex';
         }
     </script>
