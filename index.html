@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Live Target</title>
+    <title>Frutix Blast - Music & Pro Mode</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -89,7 +89,6 @@
             margin: 10px; border: 1px solid #e94560; 
         }
         
-        /* Highlight target text when it changes */
         #targetShow { transition: 0.2s; display: inline-block; }
         .pop-text { transform: scale(1.3); color: #f9d342; }
 
@@ -107,7 +106,7 @@
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.1); } }
     </style>
 </head>
-<body>
+<body onclick="startBgMusic()">
 
     <div id="splash">
         <h1>Frutix Blast</h1>
@@ -168,17 +167,47 @@
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let soundEnabled = (localStorage.getItem('fb_sound') !== 'false');
-        let currentLvl = 1, moves = 20, targetFruit = '', targetCount = 10, candies = [];
+        let currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, candies = [];
         let isGameActive = false;
+        let musicStarted = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Background Music Synth
+        function startBgMusic() {
+            if (musicStarted || !soundEnabled) return;
+            musicStarted = true;
+            
+            const playNote = (freq, time, duration) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(freq, time);
+                gain.gain.setValueAtTime(0.05, time);
+                gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(time);
+                osc.stop(time + duration);
+            };
+
+            let startTime = audioCtx.currentTime;
+            const melody = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5
+            setInterval(() => {
+                if(!soundEnabled) return;
+                for(let i=0; i<melody.length; i++) {
+                    playNote(melody[i], audioCtx.currentTime + (i * 0.5), 0.4);
+                }
+            }, 2000);
+        }
+
         function playSound(freq, type) {
             if(!soundEnabled) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
             osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         }
 
@@ -194,6 +223,10 @@
             soundEnabled = !soundEnabled;
             localStorage.setItem('fb_sound', soundEnabled);
             document.getElementById('soundBtn').innerText = `SOUND: ${soundEnabled ? 'ON' : 'OFF'}`;
+            if(soundEnabled) {
+                audioCtx.resume();
+                startBgMusic();
+            }
         }
 
         function toggleSettings(s) { document.getElementById('settings-modal').style.display = s?'flex':'none'; }
@@ -251,28 +284,26 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 10 + (lvl * 5); 
-            moves = 20 + Math.floor(lvl/2); 
+            
+            // Higher Targets & More Moves for longer gameplay
+            targetCount = 20 + (lvl * 10); 
+            moves = 30 + (lvl * 5); 
             
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = lvl;
-            updateTargetUI(); // Initial UI update
+            updateTargetUI();
             document.getElementById('movesShow').innerText = moves;
             initGrid();
         }
 
-        // Separate function to update both Target and Left labels
         function updateTargetUI() {
             const targetLabel = document.getElementById('targetShow');
             const leftLabel = document.getElementById('leftShow');
-            
             targetLabel.innerText = `${targetFruit} x ${targetCount}`;
             leftLabel.innerText = targetCount;
-
-            // Add animation effect
             targetLabel.classList.add('pop-text');
             leftLabel.classList.add('pop-text');
             setTimeout(() => {
@@ -313,6 +344,7 @@
                         clearCandy(startID); moves--; document.getElementById('movesShow').innerText = moves;
                     }
                     lastTap = now;
+                    startBgMusic(); // Start music on interaction
                 };
                 c.onpointerup = (e) => {
                     if (!isGameActive) return;
@@ -371,12 +403,10 @@
 
         function clearCandy(idx) {
             if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); return; }
-            
             if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
                 targetCount--;
                 updateTargetUI();
             }
-
             if(candies[idx].classList.contains('bomb')) {
                 candies[idx].classList.remove('bomb'); candies[idx].innerHTML = '';
                 let r = Math.floor(idx/8), c = idx % 8;
@@ -401,7 +431,6 @@
         setInterval(() => {
             if(!isGameActive) return;
             checkMatches();
-            
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
                     candies[i+8].innerHTML = candies[i].innerHTML;
@@ -410,13 +439,12 @@
                 }
             }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            
             if(targetCount <= 0) {
-                targetCount = 0; // Guard
+                targetCount = 0;
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
-                isGameActive = false; alert("OUT OF MOVES!"); backToMenu();
+                isGameActive = false; alert("GAME OVER! TARGET NOT MET."); backToMenu();
             }
         }, 200);
 
