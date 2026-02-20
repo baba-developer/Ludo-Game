@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Target Mode</title>
+    <title>Frutix Blast - Live Target</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -88,6 +88,11 @@
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; 
             margin: 10px; border: 1px solid #e94560; 
         }
+        
+        /* Highlight target text when it changes */
+        #targetShow { transition: 0.2s; display: inline-block; }
+        .pop-text { transform: scale(1.3); color: #f9d342; }
+
         #grid { 
             display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
             background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; 
@@ -246,7 +251,7 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 10 + (lvl * 5); // Har level par 5 fruits zyada
+            targetCount = 10 + (lvl * 5); 
             moves = 20 + Math.floor(lvl/2); 
             
             isGameActive = true;
@@ -254,10 +259,26 @@
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = lvl;
-            document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
-            document.getElementById('leftShow').innerText = targetCount;
+            updateTargetUI(); // Initial UI update
             document.getElementById('movesShow').innerText = moves;
             initGrid();
+        }
+
+        // Separate function to update both Target and Left labels
+        function updateTargetUI() {
+            const targetLabel = document.getElementById('targetShow');
+            const leftLabel = document.getElementById('leftShow');
+            
+            targetLabel.innerText = `${targetFruit} x ${targetCount}`;
+            leftLabel.innerText = targetCount;
+
+            // Add animation effect
+            targetLabel.classList.add('pop-text');
+            leftLabel.classList.add('pop-text');
+            setTimeout(() => {
+                targetLabel.classList.remove('pop-text');
+                leftLabel.classList.remove('pop-text');
+            }, 200);
         }
 
         function initGrid() {
@@ -351,10 +372,9 @@
         function clearCandy(idx) {
             if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); return; }
             
-            // Check if it's our target fruit
             if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
                 targetCount--;
-                document.getElementById('leftShow').innerText = targetCount;
+                updateTargetUI();
             }
 
             if(candies[idx].classList.contains('bomb')) {
@@ -370,11 +390,10 @@
             }
         }
 
-        // Helper for bomb logic to prevent recursion issues
         function clearCandyEffect(idx) {
             if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
                 targetCount--;
-                document.getElementById('leftShow').innerText = targetCount;
+                updateTargetUI();
             }
             candies[idx].innerHTML = '';
         }
@@ -393,6 +412,7 @@
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
             
             if(targetCount <= 0) {
+                targetCount = 0; // Guard
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
