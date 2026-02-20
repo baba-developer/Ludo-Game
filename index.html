@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Updated</title>
+    <title>Frutix Blast - Target Mode</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,7 +12,6 @@
             overflow: hidden; touch-action: none;
         }
 
-        /* Splash & Loader */
         #splash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
@@ -26,18 +25,16 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Main UI Update */
         #main-menu, #level-menu {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); display: none; flex-direction: column;
             align-items: center; z-index: 8000;
-            padding-bottom: 20px; /* Space for dev tag */
+            padding-bottom: 20px;
         }
 
         #main-menu { justify-content: space-between; padding-top: 50px; padding-bottom: 30px; box-sizing: border-box; }
         .menu-content { display: flex; flex-direction: column; align-items: center; justify-content: center; flex-grow: 1; }
 
-        /* Zig-Zag Level Map Styling */
         .map-container {
             width: 100%; height: 75vh; overflow-y: auto; 
             margin-top: 20px; padding: 40px 0;
@@ -66,7 +63,6 @@
 
         .level-node.locked { background: #444; border-color: #666; opacity: 0.6; box-shadow: none; }
         
-        /* Fixed Developer Tag Styling */
         .dev-tag-menu {
             color: rgba(255, 255, 255, 0.4);
             font-size: 12px; letter-spacing: 2px; font-weight: bold;
@@ -155,9 +151,9 @@
         </div>
         <div class="info-panel">
             <div>LVL: <b id="lvlShow">1</b></div>
-            <div>GOAL: <b id="targetShow">500</b></div>
-            <div>SCORE: <b id="scoreShow">0</b></div>
+            <div>COLLECT: <b id="targetShow">🍎 x 10</b></div>
             <div style="color: #f9d342;">MOVES: <b id="movesShow">20</b></div>
+            <div>LEFT: <b id="leftShow">10</b></div>
         </div>
         <div id="grid"></div>
         <button class="btn" style="margin-top:20px; background:#444;" onclick="backToMenu()">QUIT</button>
@@ -167,7 +163,7 @@
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let soundEnabled = (localStorage.getItem('fb_sound') !== 'false');
-        let currentLvl = 1, score = 0, moves = 20, target = 500, candies = [];
+        let currentLvl = 1, moves = 20, targetFruit = '', targetCount = 10, candies = [];
         let isGameActive = false;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -203,7 +199,7 @@
         function showWinModal() {
             isGameActive = false;
             document.getElementById('win-modal').style.display = 'flex';
-            document.getElementById('win-msg').innerText = `Target: ${target} | Your Score: ${score}`;
+            document.getElementById('win-msg').innerText = `Level ${currentLvl} Completed!`;
         }
 
         function nextLevelAction() {
@@ -249,17 +245,17 @@
 
         function startLevel(lvl) {
             currentLvl = lvl; 
-            score = 0; 
-            target = 500 + (lvl * 450); 
-            moves = 20 + Math.min(lvl, 15); 
+            targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
+            targetCount = 10 + (lvl * 5); // Har level par 5 fruits zyada
+            moves = 20 + Math.floor(lvl/2); 
             
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
-            document.getElementById('scoreShow').innerText = "0";
             document.getElementById('lvlShow').innerText = lvl;
-            document.getElementById('targetShow').innerText = target;
+            document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
+            document.getElementById('leftShow').innerText = targetCount;
             document.getElementById('movesShow').innerText = moves;
             initGrid();
         }
@@ -269,7 +265,7 @@
             for(let i=0; i<64; i++) {
                 const c = document.createElement('div');
                 c.className = 'candy'; c.id = i;
-                if(i >= 48 && Math.random() < 0.2 + (currentLvl * 0.03)) c.classList.add('ice');
+                if(i >= 48 && Math.random() < 0.2 + (currentLvl * 0.02)) c.classList.add('ice');
                 let fruit;
                 do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } 
                 while (wouldCreateMatch(i, fruit));
@@ -353,22 +349,40 @@
         function makeBomb(idx) { setTimeout(() => { candies[idx].innerHTML = '💣'; candies[idx].classList.add('bomb'); }, 100); }
 
         function clearCandy(idx) {
-            if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); score += 50; return; }
+            if(candies[idx].classList.contains('ice')) { candies[idx].classList.remove('ice'); return; }
+            
+            // Check if it's our target fruit
+            if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
+                targetCount--;
+                document.getElementById('leftShow').innerText = targetCount;
+            }
+
             if(candies[idx].classList.contains('bomb')) {
                 candies[idx].classList.remove('bomb'); candies[idx].innerHTML = '';
                 let r = Math.floor(idx/8), c = idx % 8;
                 for(let i=0; i<8; i++) {
-                    if(candies[r*8+i].innerHTML !== '') { score += 20; candies[r*8+i].innerHTML = ''; }
-                    if(candies[i*8+c].innerHTML !== '') { score += 20; candies[i*8+c].innerHTML = ''; }
+                    clearCandyEffect(r*8+i);
+                    clearCandyEffect(i*8+c);
                 }
                 playSound(100, 'sawtooth');
-            } else if(candies[idx].innerHTML !== '') { score += 10; candies[idx].innerHTML = ''; }
+            } else {
+                candies[idx].innerHTML = '';
+            }
+        }
+
+        // Helper for bomb logic to prevent recursion issues
+        function clearCandyEffect(idx) {
+            if(candies[idx].innerHTML === targetFruit && targetCount > 0) {
+                targetCount--;
+                document.getElementById('leftShow').innerText = targetCount;
+            }
+            candies[idx].innerHTML = '';
         }
 
         setInterval(() => {
             if(!isGameActive) return;
             checkMatches();
-            document.getElementById('scoreShow').innerText = score;
+            
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && !candies[i].classList.contains('ice') && candies[i+8].innerHTML === '' && !candies[i+8].classList.contains('ice')) {
                     candies[i+8].innerHTML = candies[i].innerHTML;
@@ -378,7 +392,7 @@
             }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '' && !candies[i].classList.contains('ice')) candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
             
-            if(score >= target) {
+            if(targetCount <= 0) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 showWinModal();
             } else if(moves <= 0) {
