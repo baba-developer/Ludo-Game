@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Baba Developer Edition</title>
+    <title>Frutix Blast - Smooth Move Edition</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -38,7 +38,7 @@
 
         .dev-footer {
             font-size: 12px; letter-spacing: 2px; color: rgba(255,255,255,0.5);
-            font-weight: bold; margin-top: 20px;
+            font-weight: bold; margin-top: 20px; text-align: center;
         }
 
         .map-container {
@@ -70,13 +70,14 @@
         .progress-container {
             width: 90%; height: 18px; background: #333; 
             margin: 10px auto; border-radius: 10px; position: relative; border: 2px solid #fff;
+            overflow: hidden;
         }
         #progress-fill {
             width: 0%; height: 100%; background: linear-gradient(to right, #f9d342, #ffae00);
-            border-radius: 8px; transition: width 0.3s;
+            transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .star { font-size: 18px; filter: grayscale(1); margin: 0 10px; }
-        .star.active { filter: grayscale(0); transform: scale(1.2); }
+        .star { font-size: 18px; filter: grayscale(1); margin: 0 10px; transition: 0.3s; }
+        .star.active { filter: grayscale(0); transform: scale(1.3); }
 
         .info-panel { 
             background: #0f3460; padding: 10px; border-radius: 15px; 
@@ -85,10 +86,16 @@
         }
 
         #grid { 
-            display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
-            background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; 
+            display: grid; grid-template-columns: repeat(8, 42px); gap: 4px; 
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; margin: auto; 
+            touch-action: none;
         }
-        .candy { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fff; color: initial;}
+        .candy { 
+            width: 42px; height: 42px; border-radius: 8px; display: flex; 
+            align-items: center; justify-content: center; font-size: 26px; 
+            background: rgba(255,255,255,0.1); transition: transform 0.15s ease-out;
+            user-select: none;
+        }
 
         .rewards-footer { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
         .reward-btn {
@@ -98,9 +105,8 @@
         }
 
         @keyframes hint-glow {
-            0% { background: #fff; transform: scale(1); }
-            50% { background: #f9d342; transform: scale(1.15); box-shadow: 0 0 15px #f9d342; }
-            100% { background: #fff; transform: scale(1); }
+            0%, 100% { transform: scale(1); background: rgba(255,255,255,0.1); }
+            50% { transform: scale(1.1); background: #f9d342; box-shadow: 0 0 15px #f9d342; }
         }
         .hint-active { animation: hint-glow 0.6s infinite; z-index: 100; }
     </style>
@@ -110,14 +116,13 @@
     <div id="settings-overlay">
         <h2>SETTINGS</h2>
         <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
-        <button class="btn" onclick="resetGame()" style="background:#555;">RESET ALL LEVELS</button>
+        <button class="btn" onclick="resetGame()" style="background:#555;">RESET PROGRESS</button>
         <button class="btn" onclick="closeSettings()">CLOSE</button>
     </div>
 
     <div id="ad-screen">
-        <h3>REWARD AD LOADING...</h3>
+        <h3>REWARD LOADING...</h3>
         <div class="loader-circle"></div>
-        <p>Please wait 2 seconds</p>
     </div>
 
     <div id="splash">
@@ -152,18 +157,13 @@
             <b id="lvlShow" style="font-size: 20px;">Lvl 1</b>
         </div>
 
-        <div class="progress-container">
-            <div id="progress-fill"></div>
-        </div>
+        <div class="progress-container"><div id="progress-fill"></div></div>
         <div style="display:flex; justify-content: center; margin-bottom: 10px;">
-            <span class="star" id="star1">⭐</span>
-            <span class="star" id="star2">⭐</span>
-            <span class="star" id="star3">⭐</span>
+            <span class="star" id="star1">⭐</span><span class="star" id="star2">⭐</span><span class="star" id="star3">⭐</span>
         </div>
 
         <div class="info-panel">
             <div>TARGET: <b id="targetShow">🍎 x 20</b></div>
-            <div>LEFT: <b id="leftShow">20</b></div>
             <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
         </div>
 
@@ -178,106 +178,41 @@
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
-        let musicOn = true;
-        let currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
+        let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
+        let startX, startY, activeCandyIdx = null;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        function initAudio() {
-            if(audioInited) return;
-            audioInited = true;
-            playBGM();
-        }
-
+        function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         function playBGM() {
             setInterval(() => {
-                if(!musicOn || !isGameActive && document.getElementById('main-menu').style.display !== 'flex') return;
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
+                if(!musicOn || !isGameActive) return;
+                const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.frequency.setValueAtTime(261.6, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.02, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.5);
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
                 osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + 1.5);
-            }, 2500);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            }, 3000);
         }
 
-        function playMatchSound() {
-            if(!musicOn) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(523.2, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-        }
+        window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }, 1500); };
 
-        window.onload = () => {
-            setTimeout(() => { 
-                document.getElementById('splash').style.display = 'none'; 
-                document.getElementById('main-menu').style.display = 'flex'; 
-            }, 2000);
-        };
-
-        // UI Controls
         function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
-        function toggleMusic() {
-            musicOn = !musicOn;
-            document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
-        }
-        function resetGame() {
-            if(confirm("Dabba Developer: Reset all progress?")) {
-                localStorage.setItem('fb_unlocked', 1);
-                location.reload();
-            }
-        }
+        function toggleMusic() { musicOn = !musicOn; document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`; }
+        function resetGame() { if(confirm("Reset all?")) { localStorage.setItem('fb_unlocked', 1); location.reload(); } }
 
-        // Ad Rewards
         function watchAd(type) {
-            if(!isGameActive) return;
-            isGameActive = false;
+            if(!isGameActive) return; isGameActive = false;
             document.getElementById('ad-screen').style.display = 'flex';
             setTimeout(() => {
-                document.getElementById('ad-screen').style.display = 'none';
-                isGameActive = true;
+                document.getElementById('ad-screen').style.display = 'none'; isGameActive = true;
                 if(type === 'hint') findHint();
                 if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
             }, 2000);
         }
 
-        function findHint() {
-            for(let i=0; i<64; i++) {
-                let checks = [i+1, i+8];
-                for(let next of checks) {
-                    if(next < 64 && isValid(i, next)) {
-                        candies[i].classList.add('hint-active');
-                        candies[next].classList.add('hint-active');
-                        setTimeout(() => {
-                            candies[i].classList.remove('hint-active');
-                            candies[next].classList.remove('hint-active');
-                        }, 3000);
-                        return;
-                    }
-                }
-            }
-        }
-
-        function isValid(id1, id2) {
-            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            let match = false;
-            for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) match = true;
-                if(i<48 && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) match = true;
-            }
-            candies[id1].innerHTML = v1; candies[id2].innerHTML = v2;
-            return match;
-        }
-
-        // Game Engine
         function startLevel(lvl) {
             currentLvl = lvl; targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
             targetCount = 15 + (lvl * 5); initialTarget = targetCount; moves = 30;
@@ -287,20 +222,17 @@
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = "Lvl " + lvl;
             document.getElementById('movesShow').innerText = moves;
-            resetStars(); updateUI(); initGrid();
+            updateUI(); initGrid();
         }
 
         function initGrid() {
             const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
             for(let i=0; i<64; i++) {
-                const c = document.createElement('div');
-                c.className = 'candy'; c.id = i;
-                let fruit;
-                do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } 
-                while (willMatch(i, fruit));
+                const c = document.createElement('div'); c.className = 'candy'; c.id = i;
+                let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
                 c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
             }
-            setupTouch();
+            setupSmoothTouch();
         }
 
         function willMatch(i, fruit) {
@@ -309,26 +241,56 @@
             return false;
         }
 
-        function setupTouch() {
-            let startID;
-            candies.forEach(c => {
-                c.onpointerdown = (e) => startID = parseInt(e.target.id);
-                c.onpointerup = (e) => {
-                    let target = document.elementFromPoint(e.clientX, e.clientY);
-                    if (target && target.className.includes('candy')) swap(startID, parseInt(target.id));
-                };
+        // SMOOTH SWIPE LOGIC
+        function setupSmoothTouch() {
+            const grid = document.getElementById('grid');
+            grid.addEventListener('pointerdown', e => {
+                if(!isGameActive || !e.target.classList.contains('candy')) return;
+                activeCandyIdx = parseInt(e.target.id);
+                startX = e.clientX; startY = e.clientY;
             });
+
+            grid.addEventListener('pointermove', e => {
+                if (activeCandyIdx === null) return;
+                const diffX = e.clientX - startX;
+                const diffY = e.clientY - startY;
+                const threshold = 30;
+
+                if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+                    let targetIdx = activeCandyIdx;
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        targetIdx += (diffX > 0) ? 1 : -1;
+                        if (Math.floor(targetIdx/8) !== Math.floor(activeCandyIdx/8)) targetIdx = activeCandyIdx;
+                    } else {
+                        targetIdx += (diffY > 0) ? 8 : -8;
+                    }
+                    
+                    if (targetIdx >= 0 && targetIdx < 64 && targetIdx !== activeCandyIdx) {
+                        swap(activeCandyIdx, targetIdx);
+                        activeCandyIdx = null; // Reset to prevent multiple swaps
+                    }
+                }
+            });
+
+            window.addEventListener('pointerup', () => activeCandyIdx = null);
         }
 
         function swap(id1, id2) {
-            if(!isGameActive) return;
-            let adj = [id1-1, id1+1, id1-8, id1+8];
-            if (adj.includes(id2)) {
-                let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+            candies[id1].style.transform = "scale(0.8)";
+            candies[id2].style.transform = "scale(0.8)";
+            
+            setTimeout(() => {
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                if (processMatches()) { moves--; document.getElementById('movesShow').innerText = moves; playMatchSound(); } 
-                else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
-            }
+                candies[id1].style.transform = "scale(1)";
+                candies[id2].style.transform = "scale(1)";
+                
+                if (processMatches()) {
+                    moves--; document.getElementById('movesShow').innerText = moves;
+                } else {
+                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
+                }
+            }, 100);
         }
 
         function processMatches() {
@@ -360,13 +322,12 @@
             
             if(targetCount <= 0) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
-                alert("LEVEL COMPLETE!"); backToMenu();
-            } else if(moves <= 0) { alert("GAME OVER!"); backToMenu(); }
-        }, 300);
+                isGameActive = false; alert("LEVEL WON!"); backToMenu();
+            } else if(moves <= 0) { isGameActive = false; alert("GAME OVER!"); backToMenu(); }
+        }, 250);
 
         function updateUI() {
-            document.getElementById('targetShow').innerText = `${targetFruit} x ${initialTarget}`;
-            document.getElementById('leftShow').innerText = targetCount;
+            document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = percent + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
@@ -374,9 +335,30 @@
             if(percent >= 100) document.getElementById('star3').classList.add('active');
         }
 
-        function resetStars() {
-            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-            document.getElementById('progress-fill').style.width = '0%';
+        function findHint() {
+            for(let i=0; i<64; i++) {
+                let neighbors = [i+1, i+8, i-1, i-8];
+                for(let n of neighbors) {
+                    if(n >= 0 && n < 64 && checkValid(i, n)) {
+                        candies[i].classList.add('hint-active');
+                        candies[n].classList.add('hint-active');
+                        setTimeout(() => { candies[i].classList.remove('hint-active'); candies[n].classList.remove('hint-active'); }, 2500);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function checkValid(id1, id2) {
+            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+            let m = false;
+            for(let i=0; i<64; i++) {
+                if(i%8<6 && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) m=true;
+                if(i<48 && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) m=true;
+            }
+            candies[id1].innerHTML = v1; candies[id2].innerHTML = v2;
+            return m;
         }
 
         function showLevelMenu() {
@@ -390,7 +372,6 @@
                 container.appendChild(b);
             }
         }
-
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
         function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     </script>
