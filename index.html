@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Rewards Update</title>
+    <title>Frutix Blast - Settings Update</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,13 +12,13 @@
             overflow: hidden; touch-action: none;
         }
 
-        #splash, #ad-screen {
+        #splash, #ad-screen, #settings-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; color: white; display: flex; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         
-        #ad-screen { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
+        #ad-screen, #settings-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
 
         .loader-circle {
             width: 50px; height: 50px;
@@ -53,12 +53,7 @@
             box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
             cursor: pointer; position: relative; transition: 0.2s;
         }
-
-        .level-node:nth-child(4n+1) { transform: translateX(-60px); }
-        .level-node:nth-child(4n+2) { transform: translateX(0px); }
-        .level-node:nth-child(4n+3) { transform: translateX(60px); }
-        .level-node:nth-child(4n+4) { transform: translateX(0px); }
-        .level-node.locked { background: #444; border-color: #666; opacity: 0.6; box-shadow: none; }
+        .level-node.locked { background: #444; border-color: #666; opacity: 0.6; }
 
         #win-modal {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -77,8 +72,7 @@
         
         .progress-container {
             width: 90%; height: 18px; background: #333; 
-            margin: 10px auto; border-radius: 10px; position: relative;
-            border: 2px solid #fff;
+            margin: 10px auto; border-radius: 10px; position: relative; border: 2px solid #fff;
         }
         #progress-fill {
             width: 0%; height: 100%; background: linear-gradient(to right, #f9d342, #ffae00);
@@ -101,23 +95,14 @@
             display: grid; grid-template-columns: repeat(8, 40px); gap: 4px; 
             background: rgba(255,255,255,0.1); padding: 10px; border-radius: 15px; margin: auto; 
         }
-        .candy { 
-            width: 40px; height: 40px; border-radius: 8px; display: flex; 
-            align-items: center; justify-content: center; font-size: 24px; 
-            background: #fff; touch-action: none;
-        }
+        .candy { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: #fff; }
 
-        /* Rewards Section */
-        .rewards-footer {
-            display: flex; gap: 10px; justify-content: center; margin-top: 15px;
-        }
+        .rewards-footer { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
         .reward-btn {
             background: #28a745; color: white; border: none; padding: 10px 15px;
             border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
             box-shadow: 0 3px #1e7e34;
         }
-        .reward-btn:active { transform: translateY(2px); box-shadow: none; }
-
         @keyframes hint-glow {
             0% { background: #fff; transform: scale(1); }
             50% { background: #f9d342; transform: scale(1.1); box-shadow: 0 0 15px #f9d342; }
@@ -127,6 +112,13 @@
     </style>
 </head>
 <body onclick="startBgMusic()">
+
+    <div id="settings-overlay">
+        <h2>SETTINGS</h2>
+        <button class="btn" onclick="toggleSound()" id="sound-btn">SOUND: ON</button>
+        <button class="btn" onclick="resetGameData()" style="background:#555;">RESET PROGRESS</button>
+        <button class="btn" onclick="closeSettings()" style="background:#e94560;">CLOSE</button>
+    </div>
 
     <div id="ad-screen">
         <h3>WATCHING AD...</h3>
@@ -144,7 +136,7 @@
         <div class="menu-content">
             <h1 style="color: #e94560; font-size: 45px; margin-bottom: 20px;">FRUTIX</h1>
             <button class="btn" onclick="showLevelMenu()">NEW GAME</button>
-            <button class="btn" onclick="playLastUnlocked()" style="background:#28a745;">CONTINUE</button>
+            <button class="btn" onclick="openSettings()" style="background:#4e31aa; box-shadow: 0 4px #311b92;">SETTINGS</button>
             <button class="btn" onclick="showLevelMenu()">LEVELS</button>
         </div>
         <div class="dev-tag-menu">POWERED BY BABA-DEVELOPER</div>
@@ -167,7 +159,7 @@
 
     <div id="game-ui">
         <div style="display: flex; justify-content: space-between; padding: 5px; width: 95%;">
-            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:5px;">MENU</button>
+            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:5px 10px; border-radius:5px;">EXIT</button>
             <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
         </div>
 
@@ -197,6 +189,7 @@
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
+        let soundOn = true;
         let currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false;
         let musicStarted = false;
@@ -207,9 +200,24 @@
             setTimeout(() => { document.getElementById('splash').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }, 2000);
         };
 
+        // SETTINGS LOGIC
+        function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
+        function toggleSound() {
+            soundOn = !soundOn;
+            document.getElementById('sound-btn').innerText = `SOUND: ${soundOn ? 'ON' : 'OFF'}`;
+        }
+        function resetGameData() {
+            if(confirm("Reset all levels?")) {
+                localStorage.setItem('fb_unlocked', 1);
+                location.reload();
+            }
+        }
+
         function startBgMusic() {
-            if (musicStarted) return; musicStarted = true;
+            if (musicStarted || !soundOn) return; musicStarted = true;
             setInterval(() => {
+                if(!soundOn) return;
                 const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
@@ -221,9 +229,8 @@
         // REWARD LOGIC
         function handleAdReward(type) {
             if(!isGameActive) return;
-            isGameActive = false; // Pause game logic during ad
+            isGameActive = false;
             document.getElementById('ad-screen').style.display = 'flex';
-            
             setTimeout(() => {
                 document.getElementById('ad-screen').style.display = 'none';
                 isGameActive = true;
@@ -373,7 +380,6 @@
         function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-modal').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
         function nextLevelAction() { document.getElementById('win-modal').style.display = 'none'; startLevel(currentLvl + 1); }
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-        function playLastUnlocked() { startLevel(unlockedLevel); }
         function closeWinModal() { backToMenu(); }
     </script>
 </body>
