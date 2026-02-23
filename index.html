@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Mobile Optimized</title>
+    <title>Frutix Blast - 250 Levels</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,7 +12,7 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
-        /* Music Toggle Icon (Top Right) */
+        /* Music Icon Top Right */
         #music-toggle-icon {
             position: fixed; top: 15px; right: 15px; width: 40px; height: 40px;
             background: rgba(233, 69, 96, 0.8); border-radius: 50%;
@@ -21,7 +21,6 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5); font-size: 20px;
         }
 
-        /* Name Screen */
         #name-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: flex; flex-direction: column;
@@ -64,21 +63,29 @@
 
         .map-container {
             width: 100%; height: 70vh; overflow-y: auto; 
-            padding: 40px 0; scrollbar-width: none;
+            padding: 20px 0; scrollbar-width: none;
         }
         .map-container::-webkit-scrollbar { display: none; }
 
-        .level-path { display: flex; flex-direction: column-reverse; align-items: center; }
+        .level-path { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 20px; 
+            padding: 20px;
+            justify-items: center;
+        }
 
         .level-node {
-            width: 60px; height: 60px; margin: 20px 0;
+            width: 70px; height: 70px;
             background: #e94560; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 20px; font-weight: bold; border: 4px solid #fff;
             box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
             cursor: pointer; transition: 0.2s;
+            position: relative;
         }
         .level-node.locked { background: #444; border-color: #666; opacity: 0.6; }
+        .level-node.locked::after { content: '🔒'; font-size: 12px; position: absolute; bottom: -5px; }
 
         .btn { 
             width: 200px; padding: 15px; margin: 10px; border: none; border-radius: 50px; 
@@ -107,27 +114,15 @@
         }
 
         #grid { 
-            display: grid; 
-            grid-template-columns: repeat(8, 1fr); 
-            gap: 4px; 
-            background: rgba(255,255,255,0.05); 
-            padding: 8px; 
-            border-radius: 12px; 
-            margin: 0 auto;
-            width: 92vw; 
-            max-width: 400px; 
-            box-sizing: border-box;
-            touch-action: none;
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
+            background: rgba(255,255,255,0.05); padding: 8px; 
+            border-radius: 12px; margin: 0 auto; width: 92vw; max-width: 400px; 
+            box-sizing: border-box; touch-action: none;
         }
         .candy { 
-            aspect-ratio: 1 / 1; 
-            border-radius: 6px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 6vw; 
-            background: rgba(255,255,255,0.1); 
-            transition: transform 0.15s ease-out;
+            aspect-ratio: 1 / 1; border-radius: 6px; display: flex; 
+            align-items: center; justify-content: center; font-size: 6vw; 
+            background: rgba(255,255,255,0.1); transition: transform 0.15s ease-out;
             user-select: none;
         }
         @media(min-width: 450px) { .candy { font-size: 28px; } }
@@ -188,8 +183,8 @@
     </div>
 
     <div id="level-menu">
-        <h2>SELECT LEVEL</h2>
-        <div class="map-container">
+        <h2>LEVELS (1-250)</h2>
+        <div class="map-container" id="mapScroll">
             <div class="level-path" id="levelContainer"></div>
         </div>
         <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
@@ -258,78 +253,83 @@
             localStorage.setItem('fb_playername', playerName);
             document.getElementById('name-screen').style.display = 'none';
             updateNameUI();
-            if(document.getElementById('main-menu').style.display !== 'flex') {
-                startSplash();
-            }
+            if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
         }
 
         function startSplash() {
             document.getElementById('splash').style.display = 'flex';
-            updateNameUI();
             setTimeout(() => { 
                 document.getElementById('splash').style.display = 'none'; 
                 document.getElementById('main-menu').style.display = 'flex'; 
             }, 1500);
         }
 
-        // --- Improved Music System ---
-        function initAudio() { 
-            if(!audioInited) { 
-                audioInited = true; 
-                playBGM(); 
-            } 
-        }
+        function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         
         function playBGM() {
             if(musicInterval) clearInterval(musicInterval);
             musicInterval = setInterval(() => {
                 if(!musicOn) return;
-                // Soft background tones
-                playNote(261.6, 0.5); // C
-                setTimeout(() => playNote(329.6, 0.5), 1000); // E
-                setTimeout(() => playNote(392.0, 0.5), 2000); // G
+                playNote(261.6, 0.4);
+                setTimeout(() => playNote(329.6, 0.4), 1000);
             }, 3000);
         }
 
         function playNote(freq, dur) {
             if(!musicOn) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + dur);
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + dur);
+            } catch(e) {}
         }
 
         function toggleMusic() { 
             musicOn = !musicOn; 
             document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
             document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇';
-            document.getElementById('music-toggle-icon').style.background = musicOn ? 'rgba(233, 69, 96, 0.8)' : '#555';
         }
 
         function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
         function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
 
-        function watchAd(type) {
-            if(!isGameActive) return; isGameActive = false;
-            document.getElementById('ad-screen').style.display = 'flex';
+        function showLevelMenu() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('level-menu').style.display = 'flex';
+            const container = document.getElementById('levelContainer'); 
+            container.innerHTML = '';
+            
+            // Generate 250 levels in a grid
+            for(let i = 1; i <= 250; i++) {
+                const node = document.createElement('div');
+                node.innerText = i;
+                node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
+                if(i <= unlockedLevel) {
+                    node.onclick = () => startLevel(i);
+                }
+                container.appendChild(node);
+            }
+            
+            // Scroll to the current unlocked level
             setTimeout(() => {
-                document.getElementById('ad-screen').style.display = 'none'; isGameActive = true;
-                if(type === 'hint') findHint();
-                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
-            }, 2000);
+                const activeNode = container.children[unlockedLevel - 1];
+                if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
         }
 
-        // --- Unlimited Levels System ---
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 15 + (lvl * 4); // Difficulty scales with level
+            // Difficulty scaling: more targets and slightly fewer moves as levels go up
+            targetCount = 15 + Math.floor(lvl * 1.5);
             initialTarget = targetCount; 
-            moves = Math.max(20, 35 - Math.floor(lvl/3)); // Moves slightly decrease
+            moves = Math.max(15, 35 - Math.floor(lvl / 15)); 
+            
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
@@ -339,29 +339,6 @@
             resetStars(); updateUI(); initGrid();
         }
 
-        function showLevelMenu() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'flex';
-            const container = document.getElementById('levelContainer'); 
-            container.innerHTML = '';
-            
-            // Generate unlimited levels (show up to unlocked + 10)
-            let maxLevelsToShow = unlockedLevel + 10;
-            for(let i=1; i<=maxLevelsToShow; i++) {
-                const b = document.createElement('div'); b.innerText = i;
-                b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-                if(i <= unlockedLevel) b.onclick = () => startLevel(i);
-                container.appendChild(b);
-            }
-        }
-
-        // --- Standard Game Functions ---
-        function resetStars() {
-            document.getElementById('star1').classList.remove('active');
-            document.getElementById('star2').classList.remove('active');
-            document.getElementById('star3').classList.remove('active');
-        }
-
         function initGrid() {
             const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
             for(let i=0; i<64; i++) {
@@ -369,7 +346,95 @@
                 let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
                 c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
             }
-            setupSmoothTouch();
+            setupTouch();
+        }
+
+        function setupTouch() {
+            const grid = document.getElementById('grid');
+            grid.onpointerdown = e => {
+                if(!isGameActive || !e.target.classList.contains('candy')) return;
+                activeCandyIdx = parseInt(e.target.id);
+                startX = e.clientX; startY = e.clientY;
+            };
+            grid.onpointermove = e => {
+                if (activeCandyIdx === null) return;
+                const dx = e.clientX - startX; const dy = e.clientY - startY;
+                if (Math.abs(dx) > 25 || Math.abs(dy) > 25) {
+                    let target = activeCandyIdx;
+                    if (Math.abs(dx) > Math.abs(dy)) target += (dx > 0) ? 1 : -1;
+                    else target += (dy > 0) ? 8 : -8;
+                    if (target >= 0 && target < 64) swap(activeCandyIdx, target);
+                    activeCandyIdx = null;
+                }
+            };
+            window.onpointerup = () => activeCandyIdx = null;
+        }
+
+        function swap(id1, id2) {
+            // Basic neighbor check
+            const row1 = Math.floor(id1/8), col1 = id1%8, row2 = Math.floor(id2/8), col2 = id2%8;
+            if (Math.abs(row1-row2) + Math.abs(col1-col2) !== 1) return;
+
+            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+            
+            if (checkMatches()) {
+                moves--; 
+                document.getElementById('movesShow').innerText = moves;
+                processGameLogic();
+            } else {
+                setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
+            }
+        }
+
+        function checkMatches() {
+            let found = false;
+            for(let i=0; i<64; i++) {
+                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) found=true;
+                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) found=true;
+            }
+            return found;
+        }
+
+        function processGameLogic() {
+            let toClear = new Set();
+            for(let i=0; i<64; i++) {
+                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) {
+                    toClear.add(i); toClear.add(i+1); toClear.add(i+2);
+                }
+                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) {
+                    toClear.add(i); toClear.add(i+8); toClear.add(i+16);
+                }
+            }
+            toClear.forEach(idx => {
+                if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+                candies[idx].innerHTML = '';
+            });
+            updateUI();
+            
+            setTimeout(() => {
+                fillGrid();
+                if(targetCount <= 0) {
+                    if(currentLvl == unlockedLevel && unlockedLevel < 250) {
+                        unlockedLevel++;
+                        localStorage.setItem('fb_unlocked', unlockedLevel);
+                    }
+                    isGameActive = false; alert("LEVEL CLEARED!"); backToMenu();
+                } else if(moves <= 0) {
+                    isGameActive = false; alert("GAME OVER!"); backToMenu();
+                }
+            }, 300);
+        }
+
+        function fillGrid() {
+            for(let i=55; i>=0; i--) {
+                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
+                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
+                    fillGrid(); return;
+                }
+            }
+            for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+            if(checkMatches()) processGameLogic();
         }
 
         function willMatch(i, fruit) {
@@ -378,110 +443,51 @@
             return false;
         }
 
-        function setupSmoothTouch() {
-            const grid = document.getElementById('grid');
-            grid.addEventListener('pointerdown', e => {
-                if(!isGameActive || !e.target.classList.contains('candy')) return;
-                activeCandyIdx = parseInt(e.target.id);
-                startX = e.clientX; startY = e.clientY;
-            });
-            grid.addEventListener('pointermove', e => {
-                if (activeCandyIdx === null) return;
-                const diffX = e.clientX - startX; const diffY = e.clientY - startY;
-                const threshold = 25;
-                if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
-                    let targetIdx = activeCandyIdx;
-                    if (Math.abs(diffX) > Math.abs(diffY)) {
-                        targetIdx += (diffX > 0) ? 1 : -1;
-                        if (Math.floor(targetIdx/8) !== Math.floor(activeCandyIdx/8)) targetIdx = activeCandyIdx;
-                    } else {
-                        targetIdx += (diffY > 0) ? 8 : -8;
-                    }
-                    if (targetIdx >= 0 && targetIdx < 64 && targetIdx !== activeCandyIdx) {
-                        swap(activeCandyIdx, targetIdx); activeCandyIdx = null;
-                    }
-                }
-            });
-            window.addEventListener('pointerup', () => activeCandyIdx = null);
-        }
-
-        function swap(id1, id2) {
-            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].style.transform = "scale(0.8)"; candies[id2].style.transform = "scale(0.8)";
-            setTimeout(() => {
-                candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                candies[id1].style.transform = "scale(1)"; candies[id2].style.transform = "scale(1)";
-                if (processMatches()) { moves--; document.getElementById('movesShow').innerText = moves; } 
-                else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
-            }, 100);
-        }
-
-        function processMatches() {
-            let found = false, toClear = new Set();
-            for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
-                    toClear.add(i); toClear.add(i+1); toClear.add(i+2); found = true;
-                }
-                if(i<48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
-                    toClear.add(i); toClear.add(i+8); toClear.add(i+16); found = true;
-                }
-            }
-            toClear.forEach(idx => {
-                if(candies[idx].innerHTML === targetFruit && targetCount > 0) { targetCount--; updateUI(); }
-                candies[idx].innerHTML = '';
-            });
-            return found;
-        }
-
-        setInterval(() => {
-            if(!isGameActive) return;
-            processMatches();
-            for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
-                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
-                }
-            }
-            for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            
-            if(targetCount <= 0) {
-                if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
-                isGameActive = false; alert("LEVEL WON!"); backToMenu();
-            } else if(moves <= 0) { isGameActive = false; alert("GAME OVER!"); backToMenu(); }
-        }, 250);
-
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
-            document.getElementById('progress-fill').style.width = percent + '%';
+            document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
             if(percent >= 66) document.getElementById('star2').classList.add('active');
             if(percent >= 100) document.getElementById('star3').classList.add('active');
         }
 
+        function watchAd(type) {
+            document.getElementById('ad-screen').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('ad-screen').style.display = 'none';
+                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
+                if(type === 'hint') findHint();
+            }, 2000);
+        }
+
         function findHint() {
             for(let i=0; i<64; i++) {
-                let neighbors = [i+1, i+8, i-1, i-8];
+                let neighbors = [i+1, i+8];
                 for(let n of neighbors) {
-                    if(n >= 0 && n < 64 && checkValid(i, n)) {
+                    if(n < 64 && checkSwapMatch(i, n)) {
                         candies[i].classList.add('hint-active');
                         candies[n].classList.add('hint-active');
-                        setTimeout(() => { candies[i].classList.remove('hint-active'); candies[n].classList.remove('hint-active'); }, 2500);
+                        setTimeout(() => { 
+                            candies[i].classList.remove('hint-active'); 
+                            candies[n].classList.remove('hint-active'); 
+                        }, 2000);
                         return;
                     }
                 }
             }
         }
 
-        function checkValid(id1, id2) {
-            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            let m = false;
-            for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) m=true;
-                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) m=true;
-            }
-            candies[id1].innerHTML = v1; candies[id2].innerHTML = v2;
+        function checkSwapMatch(i, n) {
+            let v1 = candies[i].innerHTML, v2 = candies[n].innerHTML;
+            candies[i].innerHTML = v2; candies[n].innerHTML = v1;
+            let m = checkMatches();
+            candies[i].innerHTML = v1; candies[n].innerHTML = v2;
             return m;
+        }
+
+        function resetStars() {
+            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
         }
 
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
