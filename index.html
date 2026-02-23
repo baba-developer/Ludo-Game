@@ -97,27 +97,26 @@
             margin: 10px; border: 1px solid #e94560; font-size: 14px;
         }
 
-        /* GRID FIX FOR MOBILE */
         #grid { 
             display: grid; 
-            grid-template-columns: repeat(8, 1fr); /* Har column barabar hoga */
+            grid-template-columns: repeat(8, 1fr); 
             gap: 4px; 
             background: rgba(255,255,255,0.05); 
             padding: 8px; 
             border-radius: 12px; 
             margin: 0 auto;
-            width: 92vw; /* Screen width ke mutabiq */
-            max-width: 400px; /* Tablet/Desktop par zyada bada na ho */
+            width: 92vw; 
+            max-width: 400px; 
             box-sizing: border-box;
             touch-action: none;
         }
         .candy { 
-            aspect-ratio: 1 / 1; /* Hamesha square rahega */
+            aspect-ratio: 1 / 1; 
             border-radius: 6px; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 6vw; /* Fruit size screen ke hisab se */
+            font-size: 6vw; 
             background: rgba(255,255,255,0.1); 
             transition: transform 0.15s ease-out;
             user-select: none;
@@ -150,6 +149,7 @@
     <div id="settings-overlay">
         <h2>SETTINGS</h2>
         <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
+        <button class="btn" onclick="openNameChange()" style="background:#f39c12; box-shadow: 0 4px #d68910;">CHANGE NAME</button>
         <button class="btn" onclick="resetGame()" style="background:#555;">RESET PROGRESS</button>
         <button class="btn" onclick="closeSettings()">CLOSE</button>
     </div>
@@ -224,9 +224,23 @@
         window.onload = () => {
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
+                updateNameUI(); // Initial load par name update karein
                 startSplash();
             }
         };
+
+        // Naya Function: Name UI ko update karne ke liye
+        function updateNameUI() {
+            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+            document.getElementById('player-display').innerText = playerName;
+            document.getElementById('playerNameInput').value = playerName;
+        }
+
+        // Naya Function: Name change karne ke liye screen open karein
+        function openNameChange() {
+            closeSettings();
+            document.getElementById('name-screen').style.display = 'flex';
+        }
 
         function savePlayerName() {
             const input = document.getElementById('playerNameInput').value.trim();
@@ -234,13 +248,17 @@
             playerName = input;
             localStorage.setItem('fb_playername', playerName);
             document.getElementById('name-screen').style.display = 'none';
-            startSplash();
+            updateNameUI();
+            
+            // Agar pehle se game menu mein hain tu splash dubara nahi dikhana
+            if(document.getElementById('main-menu').style.display !== 'flex') {
+                startSplash();
+            }
         }
 
         function startSplash() {
             document.getElementById('splash').style.display = 'flex';
-            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
-            document.getElementById('player-display').innerText = playerName;
+            updateNameUI(); // Splash dikhate waqt name update karein
             setTimeout(() => { 
                 document.getElementById('splash').style.display = 'none'; 
                 document.getElementById('main-menu').style.display = 'flex'; 
