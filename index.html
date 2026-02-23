@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Baba Developer Edition</title>
+    <title>Frutix Blast - Mobile Optimized</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,7 +12,7 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
-        /* Name Screen Styling */
+        /* Name Screen */
         #name-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: flex; flex-direction: column;
@@ -77,7 +77,7 @@
             box-shadow: 0 4px #950101; cursor: pointer; text-transform: uppercase;
         }
 
-        #game-ui { display: none; text-align: center; width: 100%; max-width: 360px; }
+        #game-ui { display: none; text-align: center; width: 100%; max-width: 500px; }
         
         .progress-container {
             width: 90%; height: 18px; background: #333; 
@@ -88,32 +88,47 @@
             width: 0%; height: 100%; background: linear-gradient(to right, #f9d342, #ffae00);
             transition: width 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        .star { font-size: 18px; filter: grayscale(1); margin: 0 10px; transition: 0.3s; }
+        .star { font-size: 18px; filter: grayscale(1); margin: 0 5px; transition: 0.3s; }
         .star.active { filter: grayscale(0); transform: scale(1.3); }
 
         .info-panel { 
             background: #0f3460; padding: 10px; border-radius: 15px; 
             display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; 
-            margin: 10px; border: 1px solid #e94560;
+            margin: 10px; border: 1px solid #e94560; font-size: 14px;
         }
 
+        /* GRID FIX FOR MOBILE */
         #grid { 
-            display: grid; grid-template-columns: repeat(8, 42px); gap: 4px; 
-            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 15px; margin: auto; 
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr); /* Har column barabar hoga */
+            gap: 4px; 
+            background: rgba(255,255,255,0.05); 
+            padding: 8px; 
+            border-radius: 12px; 
+            margin: 0 auto;
+            width: 92vw; /* Screen width ke mutabiq */
+            max-width: 400px; /* Tablet/Desktop par zyada bada na ho */
+            box-sizing: border-box;
             touch-action: none;
         }
         .candy { 
-            width: 42px; height: 42px; border-radius: 8px; display: flex; 
-            align-items: center; justify-content: center; font-size: 26px; 
-            background: rgba(255,255,255,0.1); transition: transform 0.15s ease-out;
+            aspect-ratio: 1 / 1; /* Hamesha square rahega */
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 6vw; /* Fruit size screen ke hisab se */
+            background: rgba(255,255,255,0.1); 
+            transition: transform 0.15s ease-out;
             user-select: none;
         }
+        @media(min-width: 450px) { .candy { font-size: 28px; } }
 
-        .rewards-footer { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; }
         .reward-btn {
-            background: #28a745; color: white; border: none; padding: 10px 12px;
-            border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 12px;
-            box-shadow: 0 3px #1e7e34;
+            background: #28a745; color: white; border: none; padding: 8px 10px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px;
+            box-shadow: 0 3px #1e7e34; flex: 1; max-width: 140px;
         }
 
         @keyframes hint-glow {
@@ -172,14 +187,14 @@
     </div>
 
     <div id="game-ui">
-        <div style="display: flex; justify-content: space-between; padding: 10px; width: 95%;">
-            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 15px; border-radius:5px;">EXIT</button>
-            <span id="player-display" style="color:#f9d342; font-weight:bold;">Player</span>
-            <b id="lvlShow" style="font-size: 20px;">Lvl 1</b>
+        <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
+            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
+            <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
+            <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
         </div>
 
         <div class="progress-container"><div id="progress-fill"></div></div>
-        <div style="display:flex; justify-content: center; margin-bottom: 10px;">
+        <div style="display:flex; justify-content: center; margin-bottom: 5px;">
             <span class="star" id="star1">⭐</span><span class="star" id="star2">⭐</span><span class="star" id="star3">⭐</span>
         </div>
 
@@ -206,7 +221,6 @@
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-        // --- NAME SYSTEM LOGIC ---
         window.onload = () => {
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
@@ -233,14 +247,13 @@
             }, 1500);
         }
 
-        // --- PREVIOUS GAME LOGIC ---
         function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         function playBGM() {
             setInterval(() => {
                 if(!musicOn || !isGameActive) return;
                 const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
                 osc.frequency.setValueAtTime(261.6, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(); osc.stop(audioCtx.currentTime + 0.5);
             }, 3000);
@@ -249,7 +262,7 @@
         function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
         function toggleMusic() { musicOn = !musicOn; document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`; }
-        function resetGame() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
+        function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
 
         function watchAd(type) {
             if(!isGameActive) return; isGameActive = false;
@@ -270,7 +283,13 @@
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = "Lvl " + lvl;
             document.getElementById('movesShow').innerText = moves;
-            updateUI(); initGrid();
+            resetStars(); updateUI(); initGrid();
+        }
+
+        function resetStars() {
+            document.getElementById('star1').classList.remove('active');
+            document.getElementById('star2').classList.remove('active');
+            document.getElementById('star3').classList.remove('active');
         }
 
         function initGrid() {
@@ -298,9 +317,8 @@
             });
             grid.addEventListener('pointermove', e => {
                 if (activeCandyIdx === null) return;
-                const diffX = e.clientX - startX;
-                const diffY = e.clientY - startY;
-                const threshold = 30;
+                const diffX = e.clientX - startX; const diffY = e.clientY - startY;
+                const threshold = 25;
                 if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
                     let targetIdx = activeCandyIdx;
                     if (Math.abs(diffX) > Math.abs(diffY)) {
@@ -310,8 +328,7 @@
                         targetIdx += (diffY > 0) ? 8 : -8;
                     }
                     if (targetIdx >= 0 && targetIdx < 64 && targetIdx !== activeCandyIdx) {
-                        swap(activeCandyIdx, targetIdx);
-                        activeCandyIdx = null;
+                        swap(activeCandyIdx, targetIdx); activeCandyIdx = null;
                     }
                 }
             });
@@ -320,12 +337,10 @@
 
         function swap(id1, id2) {
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].style.transform = "scale(0.8)";
-            candies[id2].style.transform = "scale(0.8)";
+            candies[id1].style.transform = "scale(0.8)"; candies[id2].style.transform = "scale(0.8)";
             setTimeout(() => {
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-                candies[id1].style.transform = "scale(1)";
-                candies[id2].style.transform = "scale(1)";
+                candies[id1].style.transform = "scale(1)"; candies[id2].style.transform = "scale(1)";
                 if (processMatches()) { moves--; document.getElementById('movesShow').innerText = moves; } 
                 else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
             }, 100);
@@ -334,10 +349,10 @@
         function processMatches() {
             let found = false, toClear = new Set();
             for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
+                if(i%8<6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
                     toClear.add(i); toClear.add(i+1); toClear.add(i+2); found = true;
                 }
-                if(i<48 && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
+                if(i<48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
                     toClear.add(i); toClear.add(i+8); toClear.add(i+16); found = true;
                 }
             }
@@ -357,6 +372,7 @@
                 }
             }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+            
             if(targetCount <= 0) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 isGameActive = false; alert("LEVEL WON!"); backToMenu();
@@ -391,8 +407,8 @@
             candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
             let m = false;
             for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) m=true;
-                if(i<48 && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) m=true;
+                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) m=true;
+                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) m=true;
             }
             candies[id1].innerHTML = v1; candies[id2].innerHTML = v2;
             return m;
