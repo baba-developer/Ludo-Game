@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Pro Edition</title>
+    <title>Frutix Blast - Mobile Optimized</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,16 +12,16 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
-        /* 3. Music Logo (Top Right) */
+        /* Music Toggle Icon (Top Right) */
         #music-toggle-icon {
-            position: fixed; top: 15px; right: 15px; z-index: 40000;
-            background: rgba(233, 69, 96, 0.9); width: 45px; height: 45px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; border: 2px solid white; font-size: 22px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.5); transition: 0.2s;
+            position: fixed; top: 15px; right: 15px; width: 40px; height: 40px;
+            background: rgba(233, 69, 96, 0.8); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 40000; cursor: pointer; border: 2px solid #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5); font-size: 20px;
         }
-        #music-toggle-icon:active { transform: scale(0.9); }
 
+        /* Name Screen */
         #name-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: flex; flex-direction: column;
@@ -55,11 +55,19 @@
             align-items: center; z-index: 8000; padding: 40px 0; box-sizing: border-box;
         }
 
+        .menu-content { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .dev-footer {
+            font-size: 12px; letter-spacing: 2px; color: rgba(255,255,255,0.5);
+            font-weight: bold; margin-top: 20px; text-align: center;
+        }
+
         .map-container {
             width: 100%; height: 70vh; overflow-y: auto; 
             padding: 40px 0; scrollbar-width: none;
         }
         .map-container::-webkit-scrollbar { display: none; }
+
         .level-path { display: flex; flex-direction: column-reverse; align-items: center; }
 
         .level-node {
@@ -99,13 +107,43 @@
         }
 
         #grid { 
-            display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-            background: rgba(255,255,255,0.05); padding: 8px; border-radius: 12px; 
-            margin: 0 auto; width: 92vw; max-width: 400px; box-sizing: border-box;
+            display: grid; 
+            grid-template-columns: repeat(8, 1fr); 
+            gap: 4px; 
+            background: rgba(255,255,255,0.05); 
+            padding: 8px; 
+            border-radius: 12px; 
+            margin: 0 auto;
+            width: 92vw; 
+            max-width: 400px; 
+            box-sizing: border-box;
+            touch-action: none;
         }
-        .candy { aspect-ratio: 1/1; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 6vw; background: rgba(255,255,255,0.1); }
-        .reward-btn { background: #28a745; color: white; border: none; padding: 8px 10px; border-radius: 8px; font-weight: bold; flex: 1; font-size: 11px; }
-        .dev-footer { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 20px; }
+        .candy { 
+            aspect-ratio: 1 / 1; 
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 6vw; 
+            background: rgba(255,255,255,0.1); 
+            transition: transform 0.15s ease-out;
+            user-select: none;
+        }
+        @media(min-width: 450px) { .candy { font-size: 28px; } }
+
+        .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; }
+        .reward-btn {
+            background: #28a745; color: white; border: none; padding: 8px 10px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px;
+            box-shadow: 0 3px #1e7e34; flex: 1; max-width: 140px;
+        }
+
+        @keyframes hint-glow {
+            0%, 100% { transform: scale(1); background: rgba(255,255,255,0.1); }
+            50% { transform: scale(1.1); background: #f9d342; box-shadow: 0 0 15px #f9d342; }
+        }
+        .hint-active { animation: hint-glow 0.6s infinite; z-index: 100; }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -113,7 +151,7 @@
     <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
 
     <div id="name-screen">
-        <h2>WELCOME TO FRUTIX</h2>
+        <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
         <input type="text" id="playerNameInput" class="name-input" placeholder="Enter Your Name" maxlength="12">
         <button class="btn" onclick="savePlayerName()">START GAME</button>
         <p class="dev-footer">BABA-DEVELOPER</p>
@@ -122,24 +160,31 @@
     <div id="settings-overlay">
         <h2>SETTINGS</h2>
         <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
-        <button class="btn" onclick="openNameChange()" style="background:#f39c12;">CHANGE NAME</button>
+        <button class="btn" onclick="openNameChange()" style="background:#f39c12; box-shadow: 0 4px #d68910;">CHANGE NAME</button>
         <button class="btn" onclick="resetGame()" style="background:#555;">RESET PROGRESS</button>
         <button class="btn" onclick="closeSettings()">CLOSE</button>
     </div>
 
+    <div id="ad-screen">
+        <h3>REWARD LOADING...</h3>
+        <div class="loader-circle"></div>
+    </div>
+
     <div id="splash">
-        <h1>Frutix Blast</h1>
+        <h1 id="splash-name">Frutix Blast</h1>
         <div class="loader-circle"></div>
         <p class="dev-footer">POWERED BY BABA-DEVELOPER</p>
     </div>
 
     <div id="main-menu">
-        <div style="margin-top: 50px;">
-            <h3 id="welcome-text" style="color: #f9d342;">Hi, Player!</h3>
+        <div class="menu-content">
+            <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
             <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
+            <p style="margin-bottom: 30px;">Premium Blast Game</p>
             <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
             <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
         </div>
+        <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
     </div>
 
     <div id="level-menu">
@@ -148,25 +193,31 @@
             <div class="level-path" id="levelContainer"></div>
         </div>
         <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
+        <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
     </div>
 
     <div id="game-ui">
-        <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 90%;">
-            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px;">EXIT</button>
+        <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
+            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
+            <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
             <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
         </div>
+
         <div class="progress-container"><div id="progress-fill"></div></div>
         <div style="display:flex; justify-content: center; margin-bottom: 5px;">
             <span class="star" id="star1">⭐</span><span class="star" id="star2">⭐</span><span class="star" id="star3">⭐</span>
         </div>
+
         <div class="info-panel">
             <div>TARGET: <b id="targetShow">🍎 x 20</b></div>
             <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
         </div>
+
         <div id="grid"></div>
-        <div style="display:flex; gap:10px; margin-top:15px; padding:0 10px;">
+
+        <div class="rewards-footer">
             <button class="reward-btn" onclick="watchAd('hint')">💡 HINT (AD)</button>
-            <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12;">➕ 5 MOVES (AD)</button>
+            <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (AD)</button>
         </div>
     </div>
 
@@ -176,75 +227,11 @@
         let playerName = localStorage.getItem('fb_playername') || "";
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
+        let startX, startY, activeCandyIdx = null;
 
-        // --- 2. Professional Music System ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let bgmInterval;
+        let musicInterval;
 
-        function initAudio() {
-            if (!audioInited) {
-                audioInited = true;
-                playBGM();
-            }
-        }
-
-        function playBGM() {
-            if(bgmInterval) clearInterval(bgmInterval);
-            bgmInterval = setInterval(() => {
-                if (!musicOn) return;
-                // Ek soft melody jo loop hoti rahegi
-                playNote(261.6, 0.5); // C4
-                setTimeout(() => playNote(329.6, 0.5), 500); // E4
-                setTimeout(() => playNote(392.0, 0.5), 1000); // G4
-            }, 2000);
-        }
-
-        function playNote(freq, dur) {
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            g.gain.setValueAtTime(0.01, audioCtx.currentTime);
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + dur);
-        }
-
-        // 3. Music Off/On Toggle Function
-        function toggleMusic() {
-            musicOn = !musicOn;
-            const btn = document.getElementById('music-btn');
-            const icon = document.getElementById('music-toggle-icon');
-            if(musicOn) {
-                btn.innerText = "MUSIC: ON";
-                icon.innerText = "🔊";
-                icon.style.background = "rgba(233, 69, 96, 0.9)";
-            } else {
-                btn.innerText = "MUSIC: OFF";
-                icon.innerText = "🔇";
-                icon.style.background = "#555";
-            }
-        }
-
-        // --- 1. Unlimited Levels System ---
-        function showLevelMenu() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'flex';
-            const container = document.getElementById('levelContainer');
-            container.innerHTML = '';
-            
-            // Unlocked level se 10 levels aage tak dikhayenge hamesha (Unlimited)
-            let totalToShow = Math.max(20, unlockedLevel + 5); 
-            for(let i=1; i<=totalToShow; i++) {
-                const b = document.createElement('div');
-                b.innerText = i;
-                b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-                if(i <= unlockedLevel) b.onclick = () => startLevel(i);
-                container.appendChild(b);
-            }
-        }
-
-        // --- Game Logic ---
         window.onload = () => {
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
@@ -253,40 +240,126 @@
             }
         };
 
+        function updateNameUI() {
+            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+            document.getElementById('player-display').innerText = playerName;
+            document.getElementById('playerNameInput').value = playerName;
+        }
+
+        function openNameChange() {
+            closeSettings();
+            document.getElementById('name-screen').style.display = 'flex';
+        }
+
         function savePlayerName() {
             const input = document.getElementById('playerNameInput').value.trim();
-            if (input === "") return;
+            if (input === "") { alert("Please enter your name!"); return; }
             playerName = input;
             localStorage.setItem('fb_playername', playerName);
             document.getElementById('name-screen').style.display = 'none';
             updateNameUI();
-            startSplash();
-        }
-
-        function updateNameUI() {
-            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+            if(document.getElementById('main-menu').style.display !== 'flex') {
+                startSplash();
+            }
         }
 
         function startSplash() {
             document.getElementById('splash').style.display = 'flex';
+            updateNameUI();
             setTimeout(() => { 
                 document.getElementById('splash').style.display = 'none'; 
                 document.getElementById('main-menu').style.display = 'flex'; 
             }, 1500);
         }
 
+        // --- Improved Music System ---
+        function initAudio() { 
+            if(!audioInited) { 
+                audioInited = true; 
+                playBGM(); 
+            } 
+        }
+        
+        function playBGM() {
+            if(musicInterval) clearInterval(musicInterval);
+            musicInterval = setInterval(() => {
+                if(!musicOn) return;
+                // Soft background tones
+                playNote(261.6, 0.5); // C
+                setTimeout(() => playNote(329.6, 0.5), 1000); // E
+                setTimeout(() => playNote(392.0, 0.5), 2000); // G
+            }, 3000);
+        }
+
+        function playNote(freq, dur) {
+            if(!musicOn) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        }
+
+        function toggleMusic() { 
+            musicOn = !musicOn; 
+            document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
+            document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇';
+            document.getElementById('music-toggle-icon').style.background = musicOn ? 'rgba(233, 69, 96, 0.8)' : '#555';
+        }
+
+        function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
+        function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
+        function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
+
+        function watchAd(type) {
+            if(!isGameActive) return; isGameActive = false;
+            document.getElementById('ad-screen').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('ad-screen').style.display = 'none'; isGameActive = true;
+                if(type === 'hint') findHint();
+                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
+            }, 2000);
+        }
+
+        // --- Unlimited Levels System ---
         function startLevel(lvl) {
-            currentLvl = lvl;
+            currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 15 + (lvl * 3); 
-            initialTarget = targetCount;
-            moves = Math.max(20, 40 - Math.floor(lvl/2));
+            targetCount = 15 + (lvl * 4); // Difficulty scales with level
+            initialTarget = targetCount; 
+            moves = Math.max(20, 35 - Math.floor(lvl/3)); // Moves slightly decrease
             isGameActive = true;
+            document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = "Lvl " + lvl;
             document.getElementById('movesShow').innerText = moves;
             resetStars(); updateUI(); initGrid();
+        }
+
+        function showLevelMenu() {
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('level-menu').style.display = 'flex';
+            const container = document.getElementById('levelContainer'); 
+            container.innerHTML = '';
+            
+            // Generate unlimited levels (show up to unlocked + 10)
+            let maxLevelsToShow = unlockedLevel + 10;
+            for(let i=1; i<=maxLevelsToShow; i++) {
+                const b = document.createElement('div'); b.innerText = i;
+                b.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
+                if(i <= unlockedLevel) b.onclick = () => startLevel(i);
+                container.appendChild(b);
+            }
+        }
+
+        // --- Standard Game Functions ---
+        function resetStars() {
+            document.getElementById('star1').classList.remove('active');
+            document.getElementById('star2').classList.remove('active');
+            document.getElementById('star3').classList.remove('active');
         }
 
         function initGrid() {
@@ -296,7 +369,7 @@
                 let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
                 c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
             }
-            setupTouch();
+            setupSmoothTouch();
         }
 
         function willMatch(i, fruit) {
@@ -305,53 +378,76 @@
             return false;
         }
 
-        function setupTouch() {
+        function setupSmoothTouch() {
             const grid = document.getElementById('grid');
-            let startId, startX, startY;
-            grid.onpointerdown = e => { if(e.target.id) { startId = parseInt(e.target.id); startX = e.clientX; startY = e.clientY; }};
-            grid.onpointerup = e => {
-                if(startId === undefined) return;
-                const diffX = e.clientX - startX, diffY = e.clientY - startY;
-                let targetId = startId;
-                if(Math.abs(diffX) > Math.abs(diffY)) targetId += (diffX > 0 ? 1 : -1);
-                else targetId += (diffY > 0 ? 8 : -8);
-                if(targetId >=0 && targetId < 64) swap(startId, targetId);
-                startId = undefined;
-            };
+            grid.addEventListener('pointerdown', e => {
+                if(!isGameActive || !e.target.classList.contains('candy')) return;
+                activeCandyIdx = parseInt(e.target.id);
+                startX = e.clientX; startY = e.clientY;
+            });
+            grid.addEventListener('pointermove', e => {
+                if (activeCandyIdx === null) return;
+                const diffX = e.clientX - startX; const diffY = e.clientY - startY;
+                const threshold = 25;
+                if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
+                    let targetIdx = activeCandyIdx;
+                    if (Math.abs(diffX) > Math.abs(diffY)) {
+                        targetIdx += (diffX > 0) ? 1 : -1;
+                        if (Math.floor(targetIdx/8) !== Math.floor(activeCandyIdx/8)) targetIdx = activeCandyIdx;
+                    } else {
+                        targetIdx += (diffY > 0) ? 8 : -8;
+                    }
+                    if (targetIdx >= 0 && targetIdx < 64 && targetIdx !== activeCandyIdx) {
+                        swap(activeCandyIdx, targetIdx); activeCandyIdx = null;
+                    }
+                }
+            });
+            window.addEventListener('pointerup', () => activeCandyIdx = null);
         }
 
         function swap(id1, id2) {
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            if(checkMatches()) { moves--; document.getElementById('movesShow').innerText = moves; }
-            else { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }
+            candies[id1].style.transform = "scale(0.8)"; candies[id2].style.transform = "scale(0.8)";
+            setTimeout(() => {
+                candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+                candies[id1].style.transform = "scale(1)"; candies[id2].style.transform = "scale(1)";
+                if (processMatches()) { moves--; document.getElementById('movesShow').innerText = moves; } 
+                else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
+            }, 100);
         }
 
-        function checkMatches() {
+        function processMatches() {
             let found = false, toClear = new Set();
             for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) { toClear.add(i); toClear.add(i+1); toClear.add(i+2); found=true; }
-                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) { toClear.add(i); toClear.add(i+8); toClear.add(i+16); found=true; }
+                if(i%8<6 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+1].innerHTML && candies[i].innerHTML === candies[i+2].innerHTML) {
+                    toClear.add(i); toClear.add(i+1); toClear.add(i+2); found = true;
+                }
+                if(i<48 && candies[i].innerHTML !== '' && candies[i].innerHTML === candies[i+8].innerHTML && candies[i].innerHTML === candies[i+16].innerHTML) {
+                    toClear.add(i); toClear.add(i+8); toClear.add(i+16); found = true;
+                }
             }
             toClear.forEach(idx => {
-                if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+                if(candies[idx].innerHTML === targetFruit && targetCount > 0) { targetCount--; updateUI(); }
                 candies[idx].innerHTML = '';
             });
-            updateUI();
             return found;
         }
 
         setInterval(() => {
             if(!isGameActive) return;
-            checkMatches();
-            for(let i=55; i>=0; i--) if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') { candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = ''; }
+            processMatches();
+            for(let i=55; i>=0; i--) {
+                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
+                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
+                }
+            }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
             
             if(targetCount <= 0) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 isGameActive = false; alert("LEVEL WON!"); backToMenu();
             } else if(moves <= 0) { isGameActive = false; alert("GAME OVER!"); backToMenu(); }
-        }, 300);
+        }, 250);
 
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
@@ -362,14 +458,34 @@
             if(percent >= 100) document.getElementById('star3').classList.add('active');
         }
 
-        function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
-        function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
-        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+        function findHint() {
+            for(let i=0; i<64; i++) {
+                let neighbors = [i+1, i+8, i-1, i-8];
+                for(let n of neighbors) {
+                    if(n >= 0 && n < 64 && checkValid(i, n)) {
+                        candies[i].classList.add('hint-active');
+                        candies[n].classList.add('hint-active');
+                        setTimeout(() => { candies[i].classList.remove('hint-active'); candies[n].classList.remove('hint-active'); }, 2500);
+                        return;
+                    }
+                }
+            }
+        }
+
+        function checkValid(id1, id2) {
+            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+            let m = false;
+            for(let i=0; i<64; i++) {
+                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) m=true;
+                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) m=true;
+            }
+            candies[id1].innerHTML = v1; candies[id2].innerHTML = v2;
+            return m;
+        }
+
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-        function resetGame() { if(confirm("Reset all progress?")) { localStorage.clear(); location.reload(); } }
-        function watchAd(t) { alert("Ad reward granted!"); if(t==='moves') { moves+=5; document.getElementById('movesShow').innerText = moves; } }
-        function openNameChange() { closeSettings(); document.getElementById('name-screen').style.display = 'flex'; }
+        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     </script>
 </body>
 </html>
