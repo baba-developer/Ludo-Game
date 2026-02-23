@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - Smooth Move Edition</title>
+    <title>Frutix Blast - Baba Developer Edition</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -12,9 +12,21 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
-        #splash, #ad-screen, #settings-overlay {
+        /* Name Screen Styling */
+        #name-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 30000;
+        }
+        .name-input {
+            padding: 15px; border-radius: 10px; border: 3px solid #e94560; 
+            width: 250px; font-size: 18px; text-align: center; margin-bottom: 20px;
+            outline: none; background: #1a1a2e; color: white;
+        }
+
+        #splash, #ad-screen, #settings-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #4e31aa; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         
@@ -113,6 +125,13 @@
 </head>
 <body onclick="initAudio()">
 
+    <div id="name-screen">
+        <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
+        <input type="text" id="playerNameInput" class="name-input" placeholder="Enter Your Name" maxlength="12">
+        <button class="btn" onclick="savePlayerName()">START GAME</button>
+        <p class="dev-footer">BABA-DEVELOPER</p>
+    </div>
+
     <div id="settings-overlay">
         <h2>SETTINGS</h2>
         <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
@@ -126,13 +145,14 @@
     </div>
 
     <div id="splash">
-        <h1>Frutix Blast</h1>
+        <h1 id="splash-name">Frutix Blast</h1>
         <div class="loader-circle"></div>
         <p class="dev-footer">POWERED BY BABA-DEVELOPER</p>
     </div>
 
     <div id="main-menu">
         <div class="menu-content">
+            <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
             <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
             <p style="margin-bottom: 30px;">Premium Blast Game</p>
             <button class="btn" onclick="showLevelMenu()">NEW GAME</button>
@@ -154,6 +174,7 @@
     <div id="game-ui">
         <div style="display: flex; justify-content: space-between; padding: 10px; width: 95%;">
             <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 15px; border-radius:5px;">EXIT</button>
+            <span id="player-display" style="color:#f9d342; font-weight:bold;">Player</span>
             <b id="lvlShow" style="font-size: 20px;">Lvl 1</b>
         </div>
 
@@ -178,12 +199,41 @@
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
+        let playerName = localStorage.getItem('fb_playername') || "";
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
         let startX, startY, activeCandyIdx = null;
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
+        // --- NAME SYSTEM LOGIC ---
+        window.onload = () => {
+            if (playerName !== "") {
+                document.getElementById('name-screen').style.display = 'none';
+                startSplash();
+            }
+        };
+
+        function savePlayerName() {
+            const input = document.getElementById('playerNameInput').value.trim();
+            if (input === "") { alert("Please enter your name!"); return; }
+            playerName = input;
+            localStorage.setItem('fb_playername', playerName);
+            document.getElementById('name-screen').style.display = 'none';
+            startSplash();
+        }
+
+        function startSplash() {
+            document.getElementById('splash').style.display = 'flex';
+            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+            document.getElementById('player-display').innerText = playerName;
+            setTimeout(() => { 
+                document.getElementById('splash').style.display = 'none'; 
+                document.getElementById('main-menu').style.display = 'flex'; 
+            }, 1500);
+        }
+
+        // --- PREVIOUS GAME LOGIC ---
         function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         function playBGM() {
             setInterval(() => {
@@ -196,12 +246,10 @@
             }, 3000);
         }
 
-        window.onload = () => { setTimeout(() => { document.getElementById('splash').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }, 1500); };
-
         function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
         function toggleMusic() { musicOn = !musicOn; document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`; }
-        function resetGame() { if(confirm("Reset all?")) { localStorage.setItem('fb_unlocked', 1); location.reload(); } }
+        function resetGame() { if(confirm("Reset all?")) { localStorage.clear(); location.reload(); } }
 
         function watchAd(type) {
             if(!isGameActive) return; isGameActive = false;
@@ -241,7 +289,6 @@
             return false;
         }
 
-        // SMOOTH SWIPE LOGIC
         function setupSmoothTouch() {
             const grid = document.getElementById('grid');
             grid.addEventListener('pointerdown', e => {
@@ -249,13 +296,11 @@
                 activeCandyIdx = parseInt(e.target.id);
                 startX = e.clientX; startY = e.clientY;
             });
-
             grid.addEventListener('pointermove', e => {
                 if (activeCandyIdx === null) return;
                 const diffX = e.clientX - startX;
                 const diffY = e.clientY - startY;
                 const threshold = 30;
-
                 if (Math.abs(diffX) > threshold || Math.abs(diffY) > threshold) {
                     let targetIdx = activeCandyIdx;
                     if (Math.abs(diffX) > Math.abs(diffY)) {
@@ -264,14 +309,12 @@
                     } else {
                         targetIdx += (diffY > 0) ? 8 : -8;
                     }
-                    
                     if (targetIdx >= 0 && targetIdx < 64 && targetIdx !== activeCandyIdx) {
                         swap(activeCandyIdx, targetIdx);
-                        activeCandyIdx = null; // Reset to prevent multiple swaps
+                        activeCandyIdx = null;
                     }
                 }
             });
-
             window.addEventListener('pointerup', () => activeCandyIdx = null);
         }
 
@@ -279,17 +322,12 @@
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
             candies[id1].style.transform = "scale(0.8)";
             candies[id2].style.transform = "scale(0.8)";
-            
             setTimeout(() => {
                 candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
                 candies[id1].style.transform = "scale(1)";
                 candies[id2].style.transform = "scale(1)";
-                
-                if (processMatches()) {
-                    moves--; document.getElementById('movesShow').innerText = moves;
-                } else {
-                    setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
-                }
+                if (processMatches()) { moves--; document.getElementById('movesShow').innerText = moves; } 
+                else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
             }, 100);
         }
 
@@ -319,7 +357,6 @@
                 }
             }
             for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            
             if(targetCount <= 0) {
                 if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
                 isGameActive = false; alert("LEVEL WON!"); backToMenu();
