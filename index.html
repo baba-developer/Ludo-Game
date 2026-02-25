@@ -40,7 +40,6 @@
         
         #ad-screen, #settings-overlay, #privacy-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
         
-        /* Privacy Content Style */
         .policy-content {
             width: 80%; max-height: 60vh; overflow-y: auto; background: #1a1a2e;
             padding: 20px; border-radius: 15px; border: 2px solid #e94560;
@@ -133,8 +132,25 @@
             aspect-ratio: 1 / 1; border-radius: 6px; display: flex; 
             align-items: center; justify-content: center; font-size: 6vw; 
             background: rgba(255,255,255,0.1); transition: transform 0.15s ease-out;
-            user-select: none;
+            user-select: none; position: relative;
         }
+
+        /* ICE STYLING */
+        .ice-tile {
+            background: rgba(173, 216, 230, 0.7) !important;
+            border: 2px solid #fff;
+            box-shadow: inset 0 0 10px #fff;
+            border-radius: 6px;
+        }
+        .ice-tile::after {
+            content: '❄️';
+            position: absolute;
+            font-size: 10px;
+            top: 1px;
+            right: 1px;
+            opacity: 0.8;
+        }
+
         @media(min-width: 450px) { .candy { font-size: 28px; } }
 
         .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; }
@@ -254,6 +270,7 @@
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
         let startX, startY, activeCandyIdx = null;
+        let iceTiles = new Set(); // Stores indices of tiles with ice
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicInterval;
@@ -270,7 +287,6 @@
             window.location.href = "mailto:babadeveloper1@gmail.com?subject=Frutix%20Blast%20Support&body=Hi%20Baba%20Developer,";
         }
 
-        // Privacy Functions
         function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
         function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
 
@@ -359,18 +375,22 @@
             }, 100);
         }
 
-        // HARD MODE LOGIC APPLIED HERE
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            
-            // INCREASED TARGET: Multiply factor increased from 1.5 to 2.5
             targetCount = 20 + Math.floor(lvl * 2.5);
             initialTarget = targetCount; 
-            
-            // DECREASED MOVES: Faster reduction as levels go up
             moves = Math.max(12, 28 - Math.floor(lvl / 5)); 
             
+            // GENERATE ICE FOR LEVEL 5+
+            iceTiles.clear();
+            if(lvl >= 5) {
+                let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
+                while(iceTiles.size < iceCount) {
+                    iceTiles.add(Math.floor(Math.random() * 64));
+                }
+            }
+
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
@@ -384,7 +404,9 @@
         function initGrid() {
             const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
             for(let i=0; i<64; i++) {
-                const c = document.createElement('div'); c.className = 'candy'; c.id = i;
+                const c = document.createElement('div'); 
+                c.className = 'candy' + (iceTiles.has(i) ? ' ice-tile' : ''); 
+                c.id = i;
                 let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
                 c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
             }
@@ -395,7 +417,10 @@
             const grid = document.getElementById('grid');
             grid.onpointerdown = e => {
                 if(!isGameActive || !e.target.classList.contains('candy')) return;
-                activeCandyIdx = parseInt(e.target.id);
+                let idx = parseInt(e.target.id);
+                // Cannot start drag from an iced tile
+                if(iceTiles.has(idx)) return;
+                activeCandyIdx = idx;
                 startX = e.clientX; startY = e.clientY;
             };
             grid.onpointermove = e => {
@@ -410,7 +435,10 @@
                         if(dy > 0 && activeCandyIdx < 56) target += 8;
                         else if(dy < 0 && activeCandyIdx > 7) target -= 8;
                     }
-                    if (target >= 0 && target < 64 && target !== activeCandyIdx) swap(activeCandyIdx, target);
+                    // Cannot swap into an iced tile
+                    if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
+                        swap(activeCandyIdx, target);
+                    }
                     activeCandyIdx = null;
                 }
             };
@@ -453,6 +481,13 @@
             if(toClear.size > 0) {
                 toClear.forEach(idx => {
                     if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+                    
+                    // BREAK ICE IF TILE IS IN MATCH
+                    if(iceTiles.has(idx)) {
+                        iceTiles.delete(idx);
+                        candies[idx].classList.remove('ice-tile');
+                    }
+
                     candies[idx].innerHTML = '';
                     candies[idx].style.transform = 'scale(0)';
                 });
@@ -471,14 +506,15 @@
         function fillGrid() {
             let moved = false;
             for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
+                // Cannot fall into or from an iced tile
+                if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
                     candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
                     moved = true;
                 }
             }
             
             for(let i=0; i<8; i++) {
-                if(candies[i].innerHTML === '') {
+                if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
                     candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
                     moved = true;
                 }
@@ -539,9 +575,10 @@
 
         function findHint() {
             for(let i=0; i<64; i++) {
+                if(iceTiles.has(i)) continue; // Hint ignores ice tiles
                 let neighbors = [];
-                if(i % 8 < 7) neighbors.push(i+1);
-                if(i < 56) neighbors.push(i+8);
+                if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
+                if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
                 
                 for(let n of neighbors) {
                     if(checkSwapMatch(i, n)) {
