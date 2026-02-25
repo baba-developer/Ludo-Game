@@ -32,13 +32,16 @@
             outline: none; background: #1a1a2e; color: white;
         }
 
-        #splash, #ad-screen, #settings-overlay {
+        #splash, #ad-screen, #settings-overlay, #win-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         
         #ad-screen, #settings-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
+        
+        /* Win Screen Specific */
+        #win-screen { background: rgba(26, 26, 46, 0.98); z-index: 35000; }
 
         .loader-circle {
             width: 50px; height: 50px;
@@ -144,6 +147,13 @@
 <body onclick="initAudio()">
 
     <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
+
+    <div id="win-screen">
+        <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
+        <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
+        <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
+        <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
+    </div>
 
     <div id="name-screen">
         <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
@@ -323,10 +333,6 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            
-            // Difficulty logic:
-            // Target starts at 15 and increases by 1.5 per level
-            // Moves start at 35 and decrease slightly every 15 levels
             targetCount = 15 + Math.floor(lvl * 1.5);
             initialTarget = targetCount; 
             moves = Math.max(15, 35 - Math.floor(lvl / 15)); 
@@ -334,6 +340,7 @@
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
+            document.getElementById('win-screen').style.display = 'none';
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = "Lvl " + lvl;
             document.getElementById('movesShow').innerText = moves;
@@ -456,9 +463,19 @@
                     unlockedLevel++;
                     localStorage.setItem('fb_unlocked', unlockedLevel);
                 }
-                isGameActive = false; alert("LEVEL CLEARED!"); backToMenu();
+                isGameActive = false; 
+                document.getElementById('win-screen').style.display = 'flex';
             } else if(moves <= 0) {
                 isGameActive = false; alert("GAME OVER!"); backToMenu();
+            }
+        }
+
+        function playNextLevel() {
+            if(currentLvl < 250) {
+                startLevel(currentLvl + 1);
+            } else {
+                alert("CONGRATULATIONS! ALL LEVELS COMPLETE!");
+                backToMenu();
             }
         }
 
@@ -469,7 +486,7 @@
         }
 
         function updateUI() {
-            document.getElementById('targetShow').innerText = `${targetFruit} x ${targetCount}`;
+            document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
@@ -519,7 +536,7 @@
         }
 
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     </script>
 </body>
 </html>
