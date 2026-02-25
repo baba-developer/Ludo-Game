@@ -12,7 +12,6 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
-        /* Music Icon Top Right */
         #music-toggle-icon {
             position: fixed; top: 15px; right: 15px; width: 40px; height: 40px;
             background: rgba(233, 69, 96, 0.8); border-radius: 50%;
@@ -151,6 +150,16 @@
             opacity: 0.8;
         }
 
+        /* BOMB STYLING */
+        .bomb-tile {
+            background: radial-gradient(circle, #ff4d4d, #1a1a2e) !important;
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
         @media(min-width: 450px) { .candy { font-size: 28px; } }
 
         .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; }
@@ -265,12 +274,13 @@
 
     <script>
         const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
+        const BOMB = '💣';
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let playerName = localStorage.getItem('fb_playername') || "";
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
         let startX, startY, activeCandyIdx = null;
-        let iceTiles = new Set(); // Stores indices of tiles with ice
+        let iceTiles = new Set();
 
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicInterval;
@@ -382,7 +392,6 @@
             initialTarget = targetCount; 
             moves = Math.max(12, 28 - Math.floor(lvl / 5)); 
             
-            // GENERATE ICE FOR LEVEL 5+
             iceTiles.clear();
             if(lvl >= 5) {
                 let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
@@ -418,7 +427,13 @@
             grid.onpointerdown = e => {
                 if(!isGameActive || !e.target.classList.contains('candy')) return;
                 let idx = parseInt(e.target.id);
-                // Cannot start drag from an iced tile
+                
+                // BOMB CLICK LOGIC
+                if(candies[idx].innerHTML === BOMB) {
+                    explodeBomb(idx);
+                    return;
+                }
+
                 if(iceTiles.has(idx)) return;
                 activeCandyIdx = idx;
                 startX = e.clientX; startY = e.clientY;
@@ -435,7 +450,6 @@
                         if(dy > 0 && activeCandyIdx < 56) target += 8;
                         else if(dy < 0 && activeCandyIdx > 7) target -= 8;
                     }
-                    // Cannot swap into an iced tile
                     if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
                         swap(activeCandyIdx, target);
                     }
@@ -443,6 +457,26 @@
                 }
             };
             window.onpointerup = () => activeCandyIdx = null;
+        }
+
+        function explodeBomb(idx) {
+            moves--;
+            document.getElementById('movesShow').innerText = moves;
+            
+            let row = Math.floor(idx / 8);
+            let col = idx % 8;
+            let toClear = new Set();
+
+            for(let r = row-1; r <= row+1; r++) {
+                for(let c = col-1; c <= col+1; c++) {
+                    if(r >= 0 && r < 8 && c >= 0 && c < 8) {
+                        toClear.add(r * 8 + c);
+                    }
+                }
+            }
+
+            clearMatchedTiles(toClear);
+            playNote(150, 0.2); // Explosion sound effect
         }
 
         function swap(id1, id2) {
@@ -461,6 +495,7 @@
         function checkMatches() {
             let found = false;
             for(let i=0; i<64; i++) {
+                if(candies[i].innerHTML === BOMB) continue;
                 if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) found=true;
                 if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) found=true;
             }
@@ -469,46 +504,86 @@
 
         function processGameLogic() {
             let toClear = new Set();
+            let bombEligible = false;
+
             for(let i=0; i<64; i++) {
-                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) {
-                    toClear.add(i); toClear.add(i+1); toClear.add(i+2);
+                if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
+                
+                // Horizontal matches
+                let hMatch = [i];
+                let nextH = i + 1;
+                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) {
+                    hMatch.push(nextH);
+                    nextH++;
                 }
-                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) {
-                    toClear.add(i); toClear.add(i+8); toClear.add(i+16);
+                if(hMatch.length >= 3) {
+                    hMatch.forEach(idx => toClear.add(idx));
+                    if(hMatch.length >= 4) bombEligible = true;
+                }
+
+                // Vertical matches
+                let vMatch = [i];
+                let nextV = i + 8;
+                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) {
+                    vMatch.push(nextV);
+                    nextV += 8;
+                }
+                if(vMatch.length >= 3) {
+                    vMatch.forEach(idx => toClear.add(idx));
+                    if(vMatch.length >= 4) bombEligible = true;
                 }
             }
             
             if(toClear.size > 0) {
-                toClear.forEach(idx => {
-                    if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-                    
-                    // BREAK ICE IF TILE IS IN MATCH
-                    if(iceTiles.has(idx)) {
-                        iceTiles.delete(idx);
-                        candies[idx].classList.remove('ice-tile');
-                    }
+                // If 4+ match, turn one of the cleared tiles into a bomb
+                let bombIdx = -1;
+                if(bombEligible) {
+                    bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
+                }
 
-                    candies[idx].innerHTML = '';
-                    candies[idx].style.transform = 'scale(0)';
-                });
-                
-                updateUI();
-                
-                setTimeout(() => {
-                    toClear.forEach(idx => candies[idx].style.transform = 'scale(1)');
-                    fillGrid();
-                }, 300);
+                clearMatchedTiles(toClear, bombIdx);
             } else {
                 checkEndGame();
             }
         }
 
+        function clearMatchedTiles(toClear, bombIdx = -1) {
+            toClear.forEach(idx => {
+                if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+                
+                if(iceTiles.has(idx)) {
+                    iceTiles.delete(idx);
+                    candies[idx].classList.remove('ice-tile');
+                }
+
+                if(idx === bombIdx) {
+                    candies[idx].innerHTML = BOMB;
+                    candies[idx].classList.add('bomb-tile');
+                } else {
+                    candies[idx].innerHTML = '';
+                    candies[idx].classList.remove('bomb-tile');
+                    candies[idx].style.transform = 'scale(0)';
+                }
+            });
+            
+            updateUI();
+            
+            setTimeout(() => {
+                toClear.forEach(idx => {
+                    if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)';
+                });
+                fillGrid();
+            }, 300);
+        }
+
         function fillGrid() {
             let moved = false;
             for(let i=55; i>=0; i--) {
-                // Cannot fall into or from an iced tile
                 if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
-                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
+                    candies[i+8].innerHTML = candies[i].innerHTML; 
+                    candies[i+8].className = candies[i].className;
+                    candies[i].innerHTML = '';
+                    candies[i].className = 'candy';
                     moved = true;
                 }
             }
@@ -575,7 +650,7 @@
 
         function findHint() {
             for(let i=0; i<64; i++) {
-                if(iceTiles.has(i)) continue; // Hint ignores ice tiles
+                if(iceTiles.has(i) || candies[i].innerHTML === BOMB) continue;
                 let neighbors = [];
                 if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
                 if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
