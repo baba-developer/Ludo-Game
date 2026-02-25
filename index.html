@@ -304,7 +304,6 @@
             const container = document.getElementById('levelContainer'); 
             container.innerHTML = '';
             
-            // Generate 250 levels in a grid
             for(let i = 1; i <= 250; i++) {
                 const node = document.createElement('div');
                 node.innerText = i;
@@ -315,7 +314,6 @@
                 container.appendChild(node);
             }
             
-            // Scroll to the current unlocked level
             setTimeout(() => {
                 const activeNode = container.children[unlockedLevel - 1];
                 if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -325,7 +323,10 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            // Difficulty scaling: more targets and slightly fewer moves as levels go up
+            
+            // Difficulty logic:
+            // Target starts at 15 and increases by 1.5 per level
+            // Moves start at 35 and decrease slightly every 15 levels
             targetCount = 15 + Math.floor(lvl * 1.5);
             initialTarget = targetCount; 
             moves = Math.max(15, 35 - Math.floor(lvl / 15)); 
@@ -361,9 +362,14 @@
                 const dx = e.clientX - startX; const dy = e.clientY - startY;
                 if (Math.abs(dx) > 25 || Math.abs(dy) > 25) {
                     let target = activeCandyIdx;
-                    if (Math.abs(dx) > Math.abs(dy)) target += (dx > 0) ? 1 : -1;
-                    else target += (dy > 0) ? 8 : -8;
-                    if (target >= 0 && target < 64) swap(activeCandyIdx, target);
+                    if (Math.abs(dx) > Math.abs(dy)) {
+                        if(dx > 0 && activeCandyIdx % 8 < 7) target += 1;
+                        else if(dx < 0 && activeCandyIdx % 8 > 0) target -= 1;
+                    } else {
+                        if(dy > 0 && activeCandyIdx < 56) target += 8;
+                        else if(dy < 0 && activeCandyIdx > 7) target -= 8;
+                    }
+                    if (target >= 0 && target < 64 && target !== activeCandyIdx) swap(activeCandyIdx, target);
                     activeCandyIdx = null;
                 }
             };
@@ -371,10 +377,6 @@
         }
 
         function swap(id1, id2) {
-            // Basic neighbor check
-            const row1 = Math.floor(id1/8), col1 = id1%8, row2 = Math.floor(id2/8), col2 = id2%8;
-            if (Math.abs(row1-row2) + Math.abs(col1-col2) !== 1) return;
-
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
             candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
             
@@ -406,35 +408,58 @@
                     toClear.add(i); toClear.add(i+8); toClear.add(i+16);
                 }
             }
-            toClear.forEach(idx => {
-                if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-                candies[idx].innerHTML = '';
-            });
-            updateUI();
             
-            setTimeout(() => {
-                fillGrid();
-                if(targetCount <= 0) {
-                    if(currentLvl == unlockedLevel && unlockedLevel < 250) {
-                        unlockedLevel++;
-                        localStorage.setItem('fb_unlocked', unlockedLevel);
-                    }
-                    isGameActive = false; alert("LEVEL CLEARED!"); backToMenu();
-                } else if(moves <= 0) {
-                    isGameActive = false; alert("GAME OVER!"); backToMenu();
-                }
-            }, 300);
+            if(toClear.size > 0) {
+                toClear.forEach(idx => {
+                    if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+                    candies[idx].innerHTML = '';
+                    candies[idx].style.transform = 'scale(0)';
+                });
+                
+                updateUI();
+                
+                setTimeout(() => {
+                    toClear.forEach(idx => candies[idx].style.transform = 'scale(1)');
+                    fillGrid();
+                }, 300);
+            } else {
+                checkEndGame();
+            }
         }
 
         function fillGrid() {
+            let moved = false;
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && candies[i+8].innerHTML === '') {
                     candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = '';
-                    fillGrid(); return;
+                    moved = true;
                 }
             }
-            for(let i=0; i<64; i++) if(candies[i].innerHTML === '') candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-            if(checkMatches()) processGameLogic();
+            
+            for(let i=0; i<8; i++) {
+                if(candies[i].innerHTML === '') {
+                    candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+                    moved = true;
+                }
+            }
+            
+            if(moved) setTimeout(() => fillGrid(), 100);
+            else {
+                if(checkMatches()) processGameLogic();
+                else checkEndGame();
+            }
+        }
+
+        function checkEndGame() {
+            if(targetCount <= 0) {
+                if(currentLvl == unlockedLevel && unlockedLevel < 250) {
+                    unlockedLevel++;
+                    localStorage.setItem('fb_unlocked', unlockedLevel);
+                }
+                isGameActive = false; alert("LEVEL CLEARED!"); backToMenu();
+            } else if(moves <= 0) {
+                isGameActive = false; alert("GAME OVER!"); backToMenu();
+            }
         }
 
         function willMatch(i, fruit) {
@@ -463,9 +488,12 @@
 
         function findHint() {
             for(let i=0; i<64; i++) {
-                let neighbors = [i+1, i+8];
+                let neighbors = [];
+                if(i % 8 < 7) neighbors.push(i+1);
+                if(i < 56) neighbors.push(i+8);
+                
                 for(let n of neighbors) {
-                    if(n < 64 && checkSwapMatch(i, n)) {
+                    if(checkSwapMatch(i, n)) {
                         candies[i].classList.add('hint-active');
                         candies[n].classList.add('hint-active');
                         setTimeout(() => { 
