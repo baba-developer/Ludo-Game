@@ -202,9 +202,10 @@
         <div class="menu-content">
             <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
             <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
-            <p style="margin-bottom: 30px;">Premium Blast Game</p>
+            <p style="margin-bottom: 10px;">Premium Blast Game</p>
             <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
             <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
+            <button class="btn" onclick="contactDev()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">CONTACT US</button>
             <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
         </div>
         <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
@@ -262,6 +263,10 @@
                 startSplash();
             }
         };
+
+        function contactDev() {
+            window.location.href = "mailto:babadeveloper1@gmail.com?subject=Frutix%20Blast%20Support&body=Hi%20Baba%20Developer,";
+        }
 
         // Privacy Functions
         function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
