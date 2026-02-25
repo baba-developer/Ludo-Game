@@ -260,7 +260,7 @@
         </div>
 
         <div class="info-panel">
-            <div>TARGET: <b id="targetShow">🍎 x 20</b></div>
+            <div>TARGET: <b id="targetShow">🍎 x 20</b><br><small id="iceShow" style="font-size:10px; color:#add8e6;"></small></div>
             <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
         </div>
 
@@ -603,7 +603,8 @@
         }
 
         function checkEndGame() {
-            if(targetCount <= 0) {
+            // New Condition: Level clears only if Target Fruit is done AND all Ice is gone
+            if(targetCount <= 0 && iceTiles.size === 0) {
                 if(currentLvl == unlockedLevel && unlockedLevel < 250) {
                     unlockedLevel++;
                     localStorage.setItem('fb_unlocked', unlockedLevel);
@@ -611,7 +612,9 @@
                 isGameActive = false; 
                 document.getElementById('win-screen').style.display = 'flex';
             } else if(moves <= 0) {
-                isGameActive = false; alert("GAME OVER!"); backToMenu();
+                isGameActive = false; 
+                alert("GAME OVER! Target ya Ice reh gayi!"); 
+                backToMenu();
             }
         }
 
@@ -632,6 +635,15 @@
 
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
+            
+            // Show Ice Count in UI
+            const iceUI = document.getElementById('iceShow');
+            if(iceTiles.size > 0) {
+                iceUI.innerText = `❄️ ICE REMAINING: ${iceTiles.size}`;
+            } else {
+                iceUI.innerText = "";
+            }
+
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
