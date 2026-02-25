@@ -359,12 +359,17 @@
             }, 100);
         }
 
+        // HARD MODE LOGIC APPLIED HERE
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 15 + Math.floor(lvl * 1.5);
+            
+            // INCREASED TARGET: Multiply factor increased from 1.5 to 2.5
+            targetCount = 20 + Math.floor(lvl * 2.5);
             initialTarget = targetCount; 
-            moves = Math.max(15, 35 - Math.floor(lvl / 15)); 
+            
+            // DECREASED MOVES: Faster reduction as levels go up
+            moves = Math.max(12, 28 - Math.floor(lvl / 5)); 
             
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
