@@ -134,7 +134,6 @@
             user-select: none; position: relative;
         }
 
-        /* ICE STYLING */
         .ice-tile {
             background: rgba(173, 216, 230, 0.7) !important;
             border: 2px solid #fff;
@@ -150,7 +149,6 @@
             opacity: 0.8;
         }
 
-        /* BOMB STYLING */
         .bomb-tile {
             background: radial-gradient(circle, #ff4d4d, #1a1a2e) !important;
             animation: pulse 0.5s infinite alternate;
@@ -282,6 +280,7 @@
         let startX, startY, activeCandyIdx = null;
         let iceTiles = new Set();
 
+        // AUDIO CONTEXT & NEW GAME MUSIC SYSTEM
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicInterval;
 
@@ -331,22 +330,28 @@
 
         function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         
+        // NEW UPDATED GAME MUSIC (MELODIC & LOUDER)
         function playBGM() {
             if(musicInterval) clearInterval(musicInterval);
+            let step = 0;
+            const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 293.66, 261.63]; // C-D-E-F-G-E-D-C
+            
             musicInterval = setInterval(() => {
                 if(!musicOn) return;
-                playNote(261.6, 0.4);
-                setTimeout(() => playNote(329.6, 0.4), 1000);
-            }, 3000);
+                playNote(melody[step % melody.length], 0.3, 0.05); // Melodic Game Music
+                step++;
+            }, 500); // 500ms beat
         }
 
-        function playNote(freq, dur) {
+        // LOUDER VOLUME (GAIN 0.1)
+        function playNote(freq, dur, vol = 0.05) {
             if(!musicOn) return;
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
+                osc.type = 'triangle'; // Smoother game sound
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.005, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime); // Louder volume
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(); osc.stop(audioCtx.currentTime + dur);
@@ -427,13 +432,7 @@
             grid.onpointerdown = e => {
                 if(!isGameActive || !e.target.classList.contains('candy')) return;
                 let idx = parseInt(e.target.id);
-                
-                // BOMB CLICK LOGIC
-                if(candies[idx].innerHTML === BOMB) {
-                    explodeBomb(idx);
-                    return;
-                }
-
+                if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
                 if(iceTiles.has(idx)) return;
                 activeCandyIdx = idx;
                 startX = e.clientX; startY = e.clientY;
@@ -462,11 +461,9 @@
         function explodeBomb(idx) {
             moves--;
             document.getElementById('movesShow').innerText = moves;
-            
             let row = Math.floor(idx / 8);
             let col = idx % 8;
             let toClear = new Set();
-
             for(let r = row-1; r <= row+1; r++) {
                 for(let c = col-1; c <= col+1; c++) {
                     if(r >= 0 && r < 8 && c >= 0 && c < 8) {
@@ -474,18 +471,17 @@
                     }
                 }
             }
-
             clearMatchedTiles(toClear);
-            playNote(150, 0.2); // Explosion sound effect
+            playNote(100, 0.4, 0.2); // Explosion Sound
         }
 
         function swap(id1, id2) {
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
             candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            
             if (checkMatches()) {
                 moves--; 
                 document.getElementById('movesShow').innerText = moves;
+                playNote(400, 0.1, 0.1); // Swap sound
                 processGameLogic();
             } else {
                 setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
@@ -505,43 +501,28 @@
         function processGameLogic() {
             let toClear = new Set();
             let bombEligible = false;
-
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
-                
-                // Horizontal matches
                 let hMatch = [i];
                 let nextH = i + 1;
-                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) {
-                    hMatch.push(nextH);
-                    nextH++;
-                }
+                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) { hMatch.push(nextH); nextH++; }
                 if(hMatch.length >= 3) {
                     hMatch.forEach(idx => toClear.add(idx));
                     if(hMatch.length >= 4) bombEligible = true;
                 }
-
-                // Vertical matches
                 let vMatch = [i];
                 let nextV = i + 8;
-                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) {
-                    vMatch.push(nextV);
-                    nextV += 8;
-                }
+                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) { vMatch.push(nextV); nextV += 8; }
                 if(vMatch.length >= 3) {
                     vMatch.forEach(idx => toClear.add(idx));
                     if(vMatch.length >= 4) bombEligible = true;
                 }
             }
-            
             if(toClear.size > 0) {
-                // If 4+ match, turn one of the cleared tiles into a bomb
                 let bombIdx = -1;
-                if(bombEligible) {
-                    bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
-                }
-
+                if(bombEligible) bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
                 clearMatchedTiles(toClear, bombIdx);
+                playNote(523, 0.2, 0.1); // Match sound
             } else {
                 checkEndGame();
             }
@@ -550,28 +531,13 @@
         function clearMatchedTiles(toClear, bombIdx = -1) {
             toClear.forEach(idx => {
                 if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-                
-                if(iceTiles.has(idx)) {
-                    iceTiles.delete(idx);
-                    candies[idx].classList.remove('ice-tile');
-                }
-
-                if(idx === bombIdx) {
-                    candies[idx].innerHTML = BOMB;
-                    candies[idx].classList.add('bomb-tile');
-                } else {
-                    candies[idx].innerHTML = '';
-                    candies[idx].classList.remove('bomb-tile');
-                    candies[idx].style.transform = 'scale(0)';
-                }
+                if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
+                if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); } 
+                else { candies[idx].innerHTML = ''; candies[idx].classList.remove('bomb-tile'); candies[idx].style.transform = 'scale(0)'; }
             });
-            
             updateUI();
-            
             setTimeout(() => {
-                toClear.forEach(idx => {
-                    if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)';
-                });
+                toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; });
                 fillGrid();
             }, 300);
         }
@@ -587,23 +553,17 @@
                     moved = true;
                 }
             }
-            
             for(let i=0; i<8; i++) {
                 if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
                     candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
                     moved = true;
                 }
             }
-            
             if(moved) setTimeout(() => fillGrid(), 100);
-            else {
-                if(checkMatches()) processGameLogic();
-                else checkEndGame();
-            }
+            else { if(checkMatches()) processGameLogic(); else checkEndGame(); }
         }
 
         function checkEndGame() {
-            // New Condition: Level clears only if Target Fruit is done AND all Ice is gone
             if(targetCount <= 0 && iceTiles.size === 0) {
                 if(currentLvl == unlockedLevel && unlockedLevel < 250) {
                     unlockedLevel++;
@@ -611,6 +571,7 @@
                 }
                 isGameActive = false; 
                 document.getElementById('win-screen').style.display = 'flex';
+                playNote(659, 0.5, 0.2); // Win sound
             } else if(moves <= 0) {
                 isGameActive = false; 
                 alert("GAME OVER! Target ya Ice reh gayi!"); 
@@ -619,12 +580,8 @@
         }
 
         function playNextLevel() {
-            if(currentLvl < 250) {
-                startLevel(currentLvl + 1);
-            } else {
-                alert("CONGRATULATIONS! ALL LEVELS COMPLETE!");
-                backToMenu();
-            }
+            if(currentLvl < 250) startLevel(currentLvl + 1);
+            else { alert("CONGRATULATIONS! ALL LEVELS COMPLETE!"); backToMenu(); }
         }
 
         function willMatch(i, fruit) {
@@ -635,15 +592,8 @@
 
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
-            
-            // Show Ice Count in UI
             const iceUI = document.getElementById('iceShow');
-            if(iceTiles.size > 0) {
-                iceUI.innerText = `❄️ ICE REMAINING: ${iceTiles.size}`;
-            } else {
-                iceUI.innerText = "";
-            }
-
+            iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE REMAINING: ${iceTiles.size}` : "";
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
@@ -666,7 +616,6 @@
                 let neighbors = [];
                 if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
                 if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
-                
                 for(let n of neighbors) {
                     if(checkSwapMatch(i, n)) {
                         candies[i].classList.add('hint-active');
@@ -689,10 +638,7 @@
             return m;
         }
 
-        function resetStars() {
-            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-        }
-
+        function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
         function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     </script>
