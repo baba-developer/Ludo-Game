@@ -32,15 +32,21 @@
             outline: none; background: #1a1a2e; color: white;
         }
 
-        #splash, #ad-screen, #settings-overlay, #win-screen {
+        #splash, #ad-screen, #settings-overlay, #win-screen, #privacy-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         
-        #ad-screen, #settings-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
+        #ad-screen, #settings-overlay, #privacy-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
         
-        /* Win Screen Specific */
+        /* Privacy Content Style */
+        .policy-content {
+            width: 80%; max-height: 60vh; overflow-y: auto; background: #1a1a2e;
+            padding: 20px; border-radius: 15px; border: 2px solid #e94560;
+            font-size: 14px; text-align: left; line-height: 1.5; margin-bottom: 20px;
+        }
+
         #win-screen { background: rgba(26, 26, 46, 0.98); z-index: 35000; }
 
         .loader-circle {
@@ -155,6 +161,17 @@
         <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
     </div>
 
+    <div id="privacy-overlay">
+        <h2>PRIVACY POLICY</h2>
+        <div class="policy-content">
+            <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally on your device.</p>
+            <p><b>Ads:</b> We use third-party ads to keep the game free. These providers may use device identifiers.</p>
+            <p><b>Security:</b> Your privacy is our priority. No data is shared with external parties.</p>
+            <p><b>Agreement:</b> By playing Frutix Blast, you agree to these terms.</p>
+        </div>
+        <button class="btn" onclick="closePrivacy()">CLOSE</button>
+    </div>
+
     <div id="name-screen">
         <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
         <input type="text" id="playerNameInput" class="name-input" placeholder="Enter Your Name" maxlength="12">
@@ -188,6 +205,7 @@
             <p style="margin-bottom: 30px;">Premium Blast Game</p>
             <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
             <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
+            <button class="btn" onclick="openPrivacy()" style="background:#2c3e50; font-size: 12px; width: 160px; padding: 10px;">PRIVACY POLICY</button>
         </div>
         <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
     </div>
@@ -244,6 +262,10 @@
                 startSplash();
             }
         };
+
+        // Privacy Functions
+        function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
+        function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
 
         function updateNameUI() {
             document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
