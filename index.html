@@ -31,18 +31,23 @@
             outline: none; background: #1a1a2e; color: white;
         }
 
-        #splash, #ad-screen, #settings-overlay, #win-screen, #privacy-overlay {
+        #splash, #ad-screen, #settings-overlay, #win-screen, #privacy-overlay, #rewards-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #4e31aa; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
         
-        #ad-screen, #settings-overlay, #privacy-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
+        #ad-screen, #settings-overlay, #privacy-overlay, #rewards-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
         
-        .policy-content {
+        .policy-content, .rewards-content {
             width: 80%; max-height: 60vh; overflow-y: auto; background: #1a1a2e;
             padding: 20px; border-radius: 15px; border: 2px solid #e94560;
-            font-size: 14px; text-align: left; line-height: 1.5; margin-bottom: 20px;
+            font-size: 14px; text-align: center; line-height: 1.5; margin-bottom: 20px;
+        }
+
+        .coin-display {
+            font-size: 32px; color: #f9d342; font-weight: bold; margin: 15px 0;
+            text-shadow: 0 0 10px rgba(249, 211, 66, 0.5);
         }
 
         #win-screen { background: rgba(26, 26, 46, 0.98); z-index: 35000; }
@@ -178,6 +183,19 @@
 
     <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
 
+    <div id="rewards-overlay">
+        <h2>💰 MY REWARDS</h2>
+        <div class="rewards-content">
+            <p>Your Current Balance:</p>
+            <div class="coin-display">🪙 <span id="rewardCoins">0</span></div>
+            <p style="font-size: 12px; color: #aaa;">Collect 5000 coins to Redeem!</p>
+            <hr style="border: 0.5px solid #333; margin: 15px 0;">
+            <button class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; margin-bottom: 10px;" onclick="watchAd('coins')">🎥 WATCH AD (+50 Coins)</button>
+        </div>
+        <button class="btn" style="background:#27ae60; box-shadow: 0 4px #1e8449;" onclick="alert('Need 5000 coins to Withdraw!')">WITHDRAW</button>
+        <button class="btn" style="background:#555; box-shadow: 0 4px #333;" onclick="closeRewards()">CLOSE</button>
+    </div>
+
     <div id="win-screen">
         <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
         <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
@@ -230,7 +248,7 @@
             <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
             <button class="btn" onclick="window.open('https://www.instagram.com/babadeveloper1/', '_blank')" style="background:#C13584; box-shadow: 0 4px #833AB4;">FOLLOW US</button>
             <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
-            <button class="btn" onclick="contactDev()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">CONTACT US</button>
+            <button class="btn" onclick="openRewards()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">MY REWARDS</button>
             <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
         </div>
         <div class="dev-footer">POWERED BY <a href="https://www.instagram.com/babadeveloper1/" target="_blank">@BABADEVELOPER</a></div>
@@ -248,7 +266,10 @@
     <div id="game-ui">
         <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
             <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
-            <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
+            <div style="display:flex; flex-direction:column; align-items:center;">
+                 <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
+                 <span style="color:#f9d342; font-size:10px;">🪙 <span id="gameCoins">0</span></span>
+            </div>
             <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
         </div>
 
@@ -275,16 +296,18 @@
         const BOMB = '💣';
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let playerName = localStorage.getItem('fb_playername') || "";
+        let userCoins = parseInt(localStorage.getItem('fb_coins')) || 0;
+
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
         let startX, startY, activeCandyIdx = null;
         let iceTiles = new Set();
 
-        // AUDIO CONTEXT & NEW GAME MUSIC SYSTEM
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         let musicInterval;
 
         window.onload = () => {
+            updateCoinUI();
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
                 updateNameUI();
@@ -292,8 +315,16 @@
             }
         };
 
-        function contactDev() {
-            window.location.href = "mailto:babadeveloper1@gmail.com?subject=Frutix%20Blast%20Support&body=Hi%20Baba%20Developer,";
+        function openRewards() { 
+            updateCoinUI();
+            document.getElementById('rewards-overlay').style.display = 'flex'; 
+        }
+        function closeRewards() { document.getElementById('rewards-overlay').style.display = 'none'; }
+        
+        function updateCoinUI() {
+            document.getElementById('rewardCoins').innerText = userCoins;
+            document.getElementById('gameCoins').innerText = userCoins;
+            localStorage.setItem('fb_coins', userCoins);
         }
 
         function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
@@ -330,28 +361,26 @@
 
         function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
         
-        // NEW UPDATED GAME MUSIC (MELODIC & LOUDER)
         function playBGM() {
             if(musicInterval) clearInterval(musicInterval);
             let step = 0;
-            const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 293.66, 261.63]; // C-D-E-F-G-E-D-C
+            const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 293.66, 261.63]; 
             
             musicInterval = setInterval(() => {
                 if(!musicOn) return;
-                playNote(melody[step % melody.length], 0.3, 0.05); // Melodic Game Music
+                playNote(melody[step % melody.length], 0.3, 0.05);
                 step++;
-            }, 500); // 500ms beat
+            }, 500);
         }
 
-        // LOUDER VOLUME (GAIN 0.1)
         function playNote(freq, dur, vol = 0.05) {
             if(!musicOn) return;
             try {
                 const osc = audioCtx.createOscillator();
                 const gain = audioCtx.createGain();
-                osc.type = 'triangle'; // Smoother game sound
+                osc.type = 'triangle';
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(vol, audioCtx.currentTime); // Louder volume
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
                 osc.connect(gain); gain.connect(audioCtx.destination);
                 osc.start(); osc.stop(audioCtx.currentTime + dur);
@@ -412,6 +441,7 @@
             document.getElementById('game-ui').style.display = 'block';
             document.getElementById('lvlShow').innerText = "Lvl " + lvl;
             document.getElementById('movesShow').innerText = moves;
+            updateCoinUI();
             resetStars(); updateUI(); initGrid();
         }
 
@@ -472,7 +502,7 @@
                 }
             }
             clearMatchedTiles(toClear);
-            playNote(100, 0.4, 0.2); // Explosion Sound
+            playNote(100, 0.4, 0.2);
         }
 
         function swap(id1, id2) {
@@ -481,7 +511,7 @@
             if (checkMatches()) {
                 moves--; 
                 document.getElementById('movesShow').innerText = moves;
-                playNote(400, 0.1, 0.1); // Swap sound
+                playNote(400, 0.1, 0.1);
                 processGameLogic();
             } else {
                 setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
@@ -522,7 +552,7 @@
                 let bombIdx = -1;
                 if(bombEligible) bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
                 clearMatchedTiles(toClear, bombIdx);
-                playNote(523, 0.2, 0.1); // Match sound
+                playNote(523, 0.2, 0.1);
             } else {
                 checkEndGame();
             }
@@ -533,8 +563,15 @@
                 if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
                 if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
                 if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); } 
-                else { candies[idx].innerHTML = ''; candies[idx].classList.remove('bomb-tile'); candies[idx].style.transform = 'scale(0)'; }
+                else { 
+                    candies[idx].innerHTML = ''; 
+                    candies[idx].classList.remove('bomb-tile'); 
+                    candies[idx].style.transform = 'scale(0)'; 
+                    // Reward User with 1 coin for each match!
+                    userCoins += 1;
+                }
             });
+            updateCoinUI();
             updateUI();
             setTimeout(() => {
                 toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; });
@@ -569,9 +606,12 @@
                     unlockedLevel++;
                     localStorage.setItem('fb_unlocked', unlockedLevel);
                 }
+                // Bonus for winning level
+                userCoins += 20;
+                updateCoinUI();
                 isGameActive = false; 
                 document.getElementById('win-screen').style.display = 'flex';
-                playNote(659, 0.5, 0.2); // Win sound
+                playNote(659, 0.5, 0.2);
             } else if(moves <= 0) {
                 isGameActive = false; 
                 alert("GAME OVER! Target ya Ice reh gayi!"); 
@@ -607,6 +647,11 @@
                 document.getElementById('ad-screen').style.display = 'none';
                 if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
                 if(type === 'hint') findHint();
+                if(type === 'coins') { 
+                    userCoins += 50; 
+                    updateCoinUI();
+                    alert("50 Coins added to your wallet!");
+                }
             }, 2000);
         }
 
