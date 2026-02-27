@@ -105,6 +105,7 @@
             background: #e94560; color: white; font-size: 16px; font-weight: bold; 
             box-shadow: 0 4px #950101; cursor: pointer; text-transform: uppercase;
         }
+        .btn:disabled { background: #444; box-shadow: 0 4px #222; cursor: not-allowed; opacity: 0.6; }
 
         #game-ui { display: none; text-align: center; width: 100%; max-width: 500px; }
         
@@ -171,6 +172,7 @@
             border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px;
             box-shadow: 0 3px #1e7e34; flex: 1; max-width: 140px;
         }
+        .reward-btn:disabled { background: #444; box-shadow: 0 3px #222; cursor: not-allowed; opacity: 0.7; }
 
         @keyframes hint-glow {
             0%, 100% { transform: scale(1); background: rgba(255,255,255,0.1); }
@@ -188,11 +190,17 @@
         <div class="rewards-content">
             <p>Your Current Balance:</p>
             <div class="coin-display">🪙 <span id="rewardCoins">0</span></div>
-            <p style="font-size: 12px; color: #aaa;">Collect 5000 coins to Redeem!</p>
+            <p id="adLimitText" style="font-size: 12px; color: #f9d342;">Daily Ads: 12/12 Left</p>
             <hr style="border: 0.5px solid #333; margin: 15px 0;">
-            <button class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; margin-bottom: 10px;" onclick="watchAd('coins')">🎥 WATCH AD (+50 Coins)</button>
+            
+            <button id="mainAdBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; margin-bottom: 10px;" onclick="watchAd('coins')">🎥 WATCH AD (+25 Coins)</button>
+            <p id="adCountdown" style="font-size: 11px; color: #e94560; display: none; margin-bottom: 10px;">Next Ad in: 60:00</p>
+            
+            <button id="instaBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; background: #C13584; box-shadow: 0 3px #833AB4;" onclick="followInstaReward()">📸 FOLLOW INSTA (+100 Coins)</button>
+            
+            <p style="font-size: 13px; color: #f9d342; margin-top: 15px; font-weight: bold;">10,000 Coins = 500 PKR</p>
         </div>
-        <button class="btn" style="background:#27ae60; box-shadow: 0 4px #1e8449;" onclick="alert('Need 5000 coins to Withdraw!')">WITHDRAW</button>
+        <button id="withdrawBtn" class="btn" style="background:#27ae60; box-shadow: 0 4px #1e8449;" onclick="handleWithdraw()">WITHDRAW</button>
         <button class="btn" style="background:#555; box-shadow: 0 4px #333;" onclick="closeRewards()">CLOSE</button>
     </div>
 
@@ -297,6 +305,12 @@
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let playerName = localStorage.getItem('fb_playername') || "";
         let userCoins = parseInt(localStorage.getItem('fb_coins')) || 0;
+        
+        // --- EARNING SYSTEM VARIABLES ---
+        let dailyAdCount = parseInt(localStorage.getItem('fb_daily_ads')) || 0;
+        let lastAdTimestamp = parseInt(localStorage.getItem('fb_last_ad_time')) || 0;
+        let lastResetDate = localStorage.getItem('fb_reset_date') || new Date().toDateString();
+        let instaFollowed = localStorage.getItem('fb_insta_done') === 'true';
 
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
@@ -307,7 +321,9 @@
         let musicInterval;
 
         window.onload = () => {
+            checkDailyReset();
             updateCoinUI();
+            startTimerLoop();
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
                 updateNameUI();
@@ -315,18 +331,112 @@
             }
         };
 
+        // --- EARNING SYSTEM FUNCTIONS ---
+        function checkDailyReset() {
+            let today = new Date().toDateString();
+            if (lastResetDate !== today) {
+                dailyAdCount = 0;
+                lastResetDate = today;
+                localStorage.setItem('fb_daily_ads', 0);
+                localStorage.setItem('fb_reset_date', today);
+            }
+        }
+
+        function startTimerLoop() {
+            setInterval(() => {
+                const now = Date.now();
+                const diff = now - lastAdTimestamp;
+                const oneHour = 3600000; 
+                const btn = document.getElementById('mainAdBtn');
+                const timerText = document.getElementById('adCountdown');
+
+                if (dailyAdCount >= 12) {
+                    btn.disabled = true;
+                    btn.innerText = "DAILY LIMIT REACHED";
+                    timerText.style.display = 'none';
+                } else if (diff < oneHour) {
+                    btn.disabled = true;
+                    timerText.style.display = 'block';
+                    let remaining = oneHour - diff;
+                    let mins = Math.floor(remaining / 60000);
+                    let secs = Math.floor((remaining % 60000) / 1000);
+                    timerText.innerText = `Next Ad in: ${mins}:${secs < 10 ? '0'+secs : secs}`;
+                } else {
+                    btn.disabled = false;
+                    btn.innerText = "🎥 WATCH AD (+25 Coins)";
+                    timerText.style.display = 'none';
+                }
+            }, 1000);
+        }
+
+        function followInstaReward() {
+            if (!instaFollowed) {
+                window.open('https://www.instagram.com/babadeveloper1/', '_blank');
+                userCoins += 100;
+                instaFollowed = true;
+                localStorage.setItem('fb_insta_done', 'true');
+                updateCoinUI();
+                alert("100 Coins added for Following!");
+            }
+        }
+
+        function handleWithdraw() {
+            if (userCoins >= 10000) {
+                alert("Withdrawal Request for 500 PKR submitted! Our team will contact you soon.");
+            } else {
+                alert("Minimum 10,000 coins required to Withdraw!");
+            }
+        }
+
+        function watchAd(type) {
+            if (type === 'coins') {
+                if (dailyAdCount >= 12) return;
+                document.getElementById('ad-screen').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('ad-screen').style.display = 'none';
+                    userCoins += 25;
+                    dailyAdCount++;
+                    lastAdTimestamp = Date.now();
+                    localStorage.setItem('fb_daily_ads', dailyAdCount);
+                    localStorage.setItem('fb_last_ad_time', lastAdTimestamp);
+                    updateCoinUI();
+                    alert("25 Coins added! Daily Ads Left: " + (12 - dailyAdCount));
+                }, 3000);
+            } else {
+                // Game Ads (Hints/Moves)
+                document.getElementById('ad-screen').style.display = 'flex';
+                setTimeout(() => {
+                    document.getElementById('ad-screen').style.display = 'none';
+                    if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
+                    if(type === 'hint') findHint();
+                }, 2000);
+            }
+        }
+
+        function updateCoinUI() {
+            document.getElementById('rewardCoins').innerText = userCoins;
+            document.getElementById('gameCoins').innerText = userCoins;
+            document.getElementById('adLimitText').innerText = `Daily Ads: ${12 - dailyAdCount}/12 Left`;
+            
+            const wBtn = document.getElementById('withdrawBtn');
+            wBtn.disabled = userCoins < 10000;
+            
+            const iBtn = document.getElementById('instaBtn');
+            if(instaFollowed) {
+                iBtn.innerText = "INSTA FOLLOWED ✅";
+                iBtn.disabled = true;
+            }
+
+            localStorage.setItem('fb_coins', userCoins);
+        }
+
+        // --- ORIGINAL GAME LOGIC ---
         function openRewards() { 
+            checkDailyReset();
             updateCoinUI();
             document.getElementById('rewards-overlay').style.display = 'flex'; 
         }
         function closeRewards() { document.getElementById('rewards-overlay').style.display = 'none'; }
-        
-        function updateCoinUI() {
-            document.getElementById('rewardCoins').innerText = userCoins;
-            document.getElementById('gameCoins').innerText = userCoins;
-            localStorage.setItem('fb_coins', userCoins);
-        }
-
         function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
         function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
 
@@ -567,7 +677,6 @@
                     candies[idx].innerHTML = ''; 
                     candies[idx].classList.remove('bomb-tile'); 
                     candies[idx].style.transform = 'scale(0)'; 
-                    // Reward User with 1 coin for each match!
                     userCoins += 1;
                 }
             });
@@ -606,7 +715,6 @@
                     unlockedLevel++;
                     localStorage.setItem('fb_unlocked', unlockedLevel);
                 }
-                // Bonus for winning level
                 userCoins += 20;
                 updateCoinUI();
                 isGameActive = false; 
@@ -614,14 +722,14 @@
                 playNote(659, 0.5, 0.2);
             } else if(moves <= 0) {
                 isGameActive = false; 
-                alert("GAME OVER! Target ya Ice reh gayi!"); 
+                alert("GAME OVER!"); 
                 backToMenu();
             }
         }
 
         function playNextLevel() {
             if(currentLvl < 250) startLevel(currentLvl + 1);
-            else { alert("CONGRATULATIONS! ALL LEVELS COMPLETE!"); backToMenu(); }
+            else { alert("COMPLETE!"); backToMenu(); }
         }
 
         function willMatch(i, fruit) {
@@ -633,26 +741,12 @@
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
             const iceUI = document.getElementById('iceShow');
-            iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE REMAINING: ${iceTiles.size}` : "";
+            iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE: ${iceTiles.size}` : "";
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
             if(percent >= 66) document.getElementById('star2').classList.add('active');
             if(percent >= 100) document.getElementById('star3').classList.add('active');
-        }
-
-        function watchAd(type) {
-            document.getElementById('ad-screen').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('ad-screen').style.display = 'none';
-                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
-                if(type === 'hint') findHint();
-                if(type === 'coins') { 
-                    userCoins += 50; 
-                    updateCoinUI();
-                    alert("50 Coins added to your wallet!");
-                }
-            }, 2000);
         }
 
         function findHint() {
