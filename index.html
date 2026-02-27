@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Frutix Blast - 250 Levels</title>
     <style>
-        body { 
-            margin: 0; background: #1a1a2e; height: 100vh; 
-            display: flex; flex-direction: column; align-items: center; 
-            justify-content: center; font-family: 'Segoe UI', sans-serif; 
+        body {
+            margin: 0; background: #1a1a2e; height: 100vh;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; font-family: 'Segoe UI', sans-serif;
             overflow: hidden; touch-action: none; color: white;
         }
 
@@ -26,7 +26,7 @@
             align-items: center; justify-content: center; z-index: 30000;
         }
         .name-input {
-            padding: 15px; border-radius: 10px; border: 3px solid #e94560; 
+            padding: 15px; border-radius: 10px; border: 3px solid #e94560;
             width: 250px; font-size: 18px; text-align: center; margin-bottom: 20px;
             outline: none; background: #1a1a2e; color: white;
         }
@@ -36,9 +36,9 @@
             background: #4e31aa; display: none; flex-direction: column;
             align-items: center; justify-content: center; z-index: 10000;
         }
-        
+
         #ad-screen, #settings-overlay, #privacy-overlay, #rewards-overlay { background: rgba(0,0,0,0.95); display: none; z-index: 20000; }
-        
+
         .policy-content, .rewards-content {
             width: 80%; max-height: 60vh; overflow-y: auto; background: #1a1a2e;
             padding: 20px; border-radius: 15px; border: 2px solid #e94560;
@@ -75,15 +75,15 @@
         .dev-footer a { color: #e94560; text-decoration: none; }
 
         .map-container {
-            width: 100%; height: 70vh; overflow-y: auto; 
+            width: 100%; height: 70vh; overflow-y: auto;
             padding: 20px 0; scrollbar-width: none;
         }
         .map-container::-webkit-scrollbar { display: none; }
 
-        .level-path { 
-            display: grid; 
-            grid-template-columns: repeat(3, 1fr); 
-            gap: 20px; 
+        .level-path {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
             padding: 20px;
             justify-items: center;
         }
@@ -100,17 +100,17 @@
         .level-node.locked { background: #444; border-color: #666; opacity: 0.6; }
         .level-node.locked::after { content: '🔒'; font-size: 12px; position: absolute; bottom: -5px; }
 
-        .btn { 
-            width: 200px; padding: 15px; margin: 10px; border: none; border-radius: 50px; 
-            background: #e94560; color: white; font-size: 16px; font-weight: bold; 
+        .btn {
+            width: 200px; padding: 15px; margin: 10px; border: none; border-radius: 50px;
+            background: #e94560; color: white; font-size: 16px; font-weight: bold;
             box-shadow: 0 4px #950101; cursor: pointer; text-transform: uppercase;
         }
         .btn:disabled { background: #444; box-shadow: 0 4px #222; cursor: not-allowed; opacity: 0.6; }
 
         #game-ui { display: none; text-align: center; width: 100%; max-width: 500px; }
-        
+
         .progress-container {
-            width: 90%; height: 18px; background: #333; 
+            width: 90%; height: 18px; background: #333;
             margin: 10px auto; border-radius: 10px; position: relative; border: 2px solid #fff;
             overflow: hidden;
         }
@@ -121,21 +121,21 @@
         .star { font-size: 18px; filter: grayscale(1); margin: 0 5px; transition: 0.3s; }
         .star.active { filter: grayscale(0); transform: scale(1.3); }
 
-        .info-panel { 
-            background: #0f3460; padding: 10px; border-radius: 15px; 
-            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; 
+        .info-panel {
+            background: #0f3460; padding: 10px; border-radius: 15px;
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px;
             margin: 10px; border: 1px solid #e94560; font-size: 14px;
         }
 
-        #grid { 
-            display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; 
-            background: rgba(255,255,255,0.05); padding: 8px; 
-            border-radius: 12px; margin: 0 auto; width: 92vw; max-width: 400px; 
+        #grid {
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px;
+            background: rgba(255,255,255,0.05); padding: 8px;
+            border-radius: 12px; margin: 0 auto; width: 92vw; max-width: 400px;
             box-sizing: border-box; touch-action: none;
         }
-        .candy { 
-            aspect-ratio: 1 / 1; border-radius: 6px; display: flex; 
-            align-items: center; justify-content: center; font-size: 6vw; 
+        .candy {
+            aspect-ratio: 1 / 1; border-radius: 6px; display: flex;
+            align-items: center; justify-content: center; font-size: 6vw;
             background: rgba(255,255,255,0.1); transition: transform 0.15s ease-out;
             user-select: none; position: relative;
         }
@@ -180,606 +180,664 @@
         }
         .hint-active { animation: hint-glow 0.6s infinite; z-index: 100; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
+    <script>
+        // --- ASLI FIREBASE CONFIG (Updated) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyDezQgp0DB66-zAtfxdO49rl2BqQbBFhfw",
+            authDomain: "frutix-blast.firebaseapp.com",
+            databaseURL: "https://frutix-blast-default-rtdb.firebaseio.com",
+            projectId: "frutix-blast",
+            storageBucket: "frutix-blast.appspot.com",
+            messagingSenderId: "6435529628",
+            appId: "1:6435529628:web:6a2306492379c8280a9e59"
+        };
+
+        // Firebase Initialize
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const database = firebase.database();
+        };
+
+
+        // --- WITHDRAWAL FUNCTION ---
+        function requestWithdrawal() {
+            if (typeof userCoins !== 'undefined' && userCoins < 10000) {
+                alert("Kam az kam 10,000 coins chahiye! Aapke paas " + userCoins + " hain.");
+                return;
+            }
+
+            const pNumber = prompt("EasyPaisa/JazzCash Number likhein:");
+            if (pNumber) {
+                const requestID = Date.now();
+                database.ref('withdraw_requests/' + requestID).set({
+                    username: typeof playerName !== 'undefined' ? playerName : "Guest User",
+                    amount: userCoins,
+                    account: pNumber,
+                    status: "Pending",
+                    date: new Date().toLocaleString()
+                }).then(() => {
+                    alert("✅ Request bhej di gayi hai! Payment jald mil jayegi.");
+                }).catch((e) => alert("Error: " + e.message));
+            }
+        }
+
+        // --- DATA SAVE FUNCTION ---
+        function saveToFirebase() {
+            if (typeof playerName !== 'undefined' && playerName !== "") {
+                const userPath = 'players/' + playerName.toLowerCase().replace(/\s/g, '');
+                database.ref(userPath).set({
+                    name: playerName,
+                    coins: userCoins,
+                    level: unlockedLevel,
+                    lastUpdate: Date.now()
+                });
+            }
+        }
+    </script>
 </head>
 <body onclick="initAudio()">
 
-    <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
+<div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
 
-    <div id="rewards-overlay">
-        <h2>💰 MY REWARDS</h2>
-        <div class="rewards-content">
-            <p>Your Current Balance:</p>
-            <div class="coin-display">🪙 <span id="rewardCoins">0</span></div>
-            <p id="adLimitText" style="font-size: 12px; color: #f9d342;">Daily Ads: 12/12 Left</p>
-            <hr style="border: 0.5px solid #333; margin: 15px 0;">
-            
-            <button id="mainAdBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; margin-bottom: 10px;" onclick="watchAd('coins')">🎥 WATCH AD (+25 Coins)</button>
-            <p id="adCountdown" style="font-size: 11px; color: #e94560; display: none; margin-bottom: 10px;">Next Ad in: 60:00</p>
-            
-            <button id="instaBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; background: #C13584; box-shadow: 0 3px #833AB4;" onclick="followInstaReward()">📸 FOLLOW INSTA (+100 Coins)</button>
-            
-            <p style="font-size: 13px; color: #f9d342; margin-top: 15px; font-weight: bold;">10,000 Coins = 500 PKR</p>
+<div id="rewards-overlay">
+    <h2>💰 MY REWARDS</h2>
+    <div class="rewards-content">
+        <p>Your Current Balance:</p>
+        <div class="coin-display">🪙 <span id="rewardCoins">0</span></div>
+        <p id="adLimitText" style="font-size: 12px; color: #f9d342;">Daily Ads: 12/12 Left</p>
+        <hr style="border: 0.5px solid #333; margin: 15px 0;">
+
+        <button id="mainAdBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; margin-bottom: 10px;" onclick="watchAd('coins')">🎥 WATCH AD (+25 Coins)</button>
+        <p id="adCountdown" style="font-size: 11px; color: #e94560; display: none; margin-bottom: 10px;">Next Ad in: 60:00</p>
+
+        <button id="instaBtn" class="reward-btn" style="width: 100%; max-width: 100%; padding: 12px; background: #C13584; box-shadow: 0 3px #833AB4;" onclick="followInstaReward()">📸 FOLLOW INSTA (+100 Coins)</button>
+
+        <p style="font-size: 13px; color: #f9d342; margin-top: 15px; font-weight: bold;">10,000 Coins = 500 PKR</p>
+    </div>
+    <button id="withdrawBtn" class="btn" style="background:#27ae60; box-shadow: 0 4px #1e8449;" onclick="handleWithdraw()">WITHDRAW</button>
+    <button class="btn" style="background:#555; box-shadow: 0 4px #333;" onclick="closeRewards()">CLOSE</button>
+</div>
+
+<div id="win-screen">
+    <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
+    <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
+    <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
+    <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
+</div>
+
+<div id="privacy-overlay">
+    <h2>PRIVACY POLICY</h2>
+    <div class="policy-content">
+        <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally on your device.</p>
+        <p><b>Ads:</b> We use third-party ads to keep the game free. These providers may use device identifiers.</p>
+        <p><b>Security:</b> Your privacy is our priority. No data is shared with external parties.</p>
+        <p><b>Agreement:</b> By playing Frutix Blast, you agree to these terms.</p>
+    </div>
+    <button class="btn" onclick="closePrivacy()">CLOSE</button>
+</div>
+
+<div id="name-screen">
+    <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
+    <input type="text" id="playerNameInput" class="name-input" placeholder="Enter Your Name" maxlength="12">
+    <button class="btn" onclick="savePlayerName()">START GAME</button>
+    <p class="dev-footer">BABA-DEVELOPER</p>
+</div>
+
+<div id="settings-overlay">
+    <h2>SETTINGS</h2>
+    <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
+    <button class="btn" onclick="openNameChange()" style="background:#f39c12; box-shadow: 0 4px #d68910;">CHANGE NAME</button>
+    <button class="btn" onclick="resetGame()" style="background:#555;">RESET PROGRESS</button>
+    <button class="btn" onclick="closeSettings()">CLOSE</button>
+</div>
+
+<div id="ad-screen">
+    <h3>REWARD LOADING...</h3>
+    <div class="loader-circle"></div>
+</div>
+
+<div id="splash">
+    <h1 id="splash-name">Frutix Blast</h1>
+    <div class="loader-circle"></div>
+    <p class="dev-footer">POWERED BY BABA-DEVELOPER</p>
+</div>
+
+<div id="main-menu">
+    <div class="menu-content">
+        <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
+        <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
+        <p style="margin-bottom: 10px;">Premium Blast Game</p>
+        <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
+        <button class="btn" onclick="window.open('https://www.instagram.com/babadeveloper1/', '_blank')" style="background:#C13584; box-shadow: 0 4px #833AB4;">FOLLOW US</button>
+        <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
+        <button class="btn" onclick="openRewards()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">MY REWARDS</button>
+        <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
+    </div>
+    <div class="dev-footer">POWERED BY <a href="https://www.instagram.com/babadeveloper1/" target="_blank">@BABADEVELOPER</a></div>
+</div>
+
+<div id="level-menu">
+    <h2>LEVELS (1-250)</h2>
+    <div class="map-container" id="mapScroll">
+        <div class="level-path" id="levelContainer"></div>
+    </div>
+    <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
+    <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
+</div>
+
+<div id="game-ui">
+    <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
+        <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
+        <div style="display:flex; flex-direction:column; align-items:center;">
+            <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
+            <span style="color:#f9d342; font-size:10px;">🪙 <span id="gameCoins">0</span></span>
         </div>
-        <button id="withdrawBtn" class="btn" style="background:#27ae60; box-shadow: 0 4px #1e8449;" onclick="handleWithdraw()">WITHDRAW</button>
-        <button class="btn" style="background:#555; box-shadow: 0 4px #333;" onclick="closeRewards()">CLOSE</button>
+        <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
     </div>
 
-    <div id="win-screen">
-        <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
-        <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
-        <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
-        <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
+    <div class="progress-container"><div id="progress-fill"></div></div>
+    <div style="display:flex; justify-content: center; margin-bottom: 5px;">
+        <span class="star" id="star1">⭐</span><span class="star" id="star2">⭐</span><span class="star" id="star3">⭐</span>
     </div>
 
-    <div id="privacy-overlay">
-        <h2>PRIVACY POLICY</h2>
-        <div class="policy-content">
-            <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally on your device.</p>
-            <p><b>Ads:</b> We use third-party ads to keep the game free. These providers may use device identifiers.</p>
-            <p><b>Security:</b> Your privacy is our priority. No data is shared with external parties.</p>
-            <p><b>Agreement:</b> By playing Frutix Blast, you agree to these terms.</p>
-        </div>
-        <button class="btn" onclick="closePrivacy()">CLOSE</button>
+    <div class="info-panel">
+        <div>TARGET: <b id="targetShow">🍎 x 20</b><br><small id="iceShow" style="font-size:10px; color:#add8e6;"></small></div>
+        <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
     </div>
 
-    <div id="name-screen">
-        <h2 style="margin-bottom: 20px;">WELCOME TO FRUTIX</h2>
-        <input type="text" id="playerNameInput" class="name-input" placeholder="Enter Your Name" maxlength="12">
-        <button class="btn" onclick="savePlayerName()">START GAME</button>
-        <p class="dev-footer">BABA-DEVELOPER</p>
+    <div id="grid"></div>
+
+    <div class="rewards-footer">
+        <button class="reward-btn" onclick="watchAd('hint')">💡 HINT (AD)</button>
+        <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (AD)</button>
     </div>
+</div>
 
-    <div id="settings-overlay">
-        <h2>SETTINGS</h2>
-        <button class="btn" onclick="toggleMusic()" id="music-btn">MUSIC: ON</button>
-        <button class="btn" onclick="openNameChange()" style="background:#f39c12; box-shadow: 0 4px #d68910;">CHANGE NAME</button>
-        <button class="btn" onclick="resetGame()" style="background:#555;">RESET PROGRESS</button>
-        <button class="btn" onclick="closeSettings()">CLOSE</button>
-    </div>
+<script>
+    const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
+    const BOMB = '💣';
+    let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
+    let playerName = localStorage.getItem('fb_playername') || "";
+    let userCoins = parseInt(localStorage.getItem('fb_coins')) || 0;
 
-    <div id="ad-screen">
-        <h3>REWARD LOADING...</h3>
-        <div class="loader-circle"></div>
-    </div>
+    // --- EARNING SYSTEM VARIABLES ---
+    let dailyAdCount = parseInt(localStorage.getItem('fb_daily_ads')) || 0;
+    let lastAdTimestamp = parseInt(localStorage.getItem('fb_last_ad_time')) || 0;
+    let lastResetDate = localStorage.getItem('fb_reset_date') || new Date().toDateString();
+    let instaFollowed = localStorage.getItem('fb_insta_done') === 'true';
 
-    <div id="splash">
-        <h1 id="splash-name">Frutix Blast</h1>
-        <div class="loader-circle"></div>
-        <p class="dev-footer">POWERED BY BABA-DEVELOPER</p>
-    </div>
+    let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
+    let isGameActive = false, audioInited = false;
+    let startX, startY, activeCandyIdx = null;
+    let iceTiles = new Set();
 
-    <div id="main-menu">
-        <div class="menu-content">
-            <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
-            <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
-            <p style="margin-bottom: 10px;">Premium Blast Game</p>
-            <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
-            <button class="btn" onclick="window.open('https://www.instagram.com/babadeveloper1/', '_blank')" style="background:#C13584; box-shadow: 0 4px #833AB4;">FOLLOW US</button>
-            <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
-            <button class="btn" onclick="openRewards()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">MY REWARDS</button>
-            <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
-        </div>
-        <div class="dev-footer">POWERED BY <a href="https://www.instagram.com/babadeveloper1/" target="_blank">@BABADEVELOPER</a></div>
-    </div>
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let musicInterval;
 
-    <div id="level-menu">
-        <h2>LEVELS (1-250)</h2>
-        <div class="map-container" id="mapScroll">
-            <div class="level-path" id="levelContainer"></div>
-        </div>
-        <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
-        <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
-    </div>
-
-    <div id="game-ui">
-        <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
-            <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
-            <div style="display:flex; flex-direction:column; align-items:center;">
-                 <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
-                 <span style="color:#f9d342; font-size:10px;">🪙 <span id="gameCoins">0</span></span>
-            </div>
-            <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
-        </div>
-
-        <div class="progress-container"><div id="progress-fill"></div></div>
-        <div style="display:flex; justify-content: center; margin-bottom: 5px;">
-            <span class="star" id="star1">⭐</span><span class="star" id="star2">⭐</span><span class="star" id="star3">⭐</span>
-        </div>
-
-        <div class="info-panel">
-            <div>TARGET: <b id="targetShow">🍎 x 20</b><br><small id="iceShow" style="font-size:10px; color:#add8e6;"></small></div>
-            <div style="color: #f9d342;">MOVES: <b id="movesShow">30</b></div>
-        </div>
-
-        <div id="grid"></div>
-
-        <div class="rewards-footer">
-            <button class="reward-btn" onclick="watchAd('hint')">💡 HINT (AD)</button>
-            <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (AD)</button>
-        </div>
-    </div>
-
-    <script>
-        const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
-        const BOMB = '💣';
-        let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
-        let playerName = localStorage.getItem('fb_playername') || "";
-        let userCoins = parseInt(localStorage.getItem('fb_coins')) || 0;
-        
-        // --- EARNING SYSTEM VARIABLES ---
-        let dailyAdCount = parseInt(localStorage.getItem('fb_daily_ads')) || 0;
-        let lastAdTimestamp = parseInt(localStorage.getItem('fb_last_ad_time')) || 0;
-        let lastResetDate = localStorage.getItem('fb_reset_date') || new Date().toDateString();
-        let instaFollowed = localStorage.getItem('fb_insta_done') === 'true';
-
-        let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
-        let isGameActive = false, audioInited = false;
-        let startX, startY, activeCandyIdx = null;
-        let iceTiles = new Set();
-
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        let musicInterval;
-
-        window.onload = () => {
-            checkDailyReset();
-            updateCoinUI();
-            startTimerLoop();
-            if (playerName !== "") {
-                document.getElementById('name-screen').style.display = 'none';
-                updateNameUI();
-                startSplash();
-            }
-        };
-
-        // --- EARNING SYSTEM FUNCTIONS ---
-        function checkDailyReset() {
-            let today = new Date().toDateString();
-            if (lastResetDate !== today) {
-                dailyAdCount = 0;
-                lastResetDate = today;
-                localStorage.setItem('fb_daily_ads', 0);
-                localStorage.setItem('fb_reset_date', today);
-            }
-        }
-
-        function startTimerLoop() {
-            setInterval(() => {
-                const now = Date.now();
-                const diff = now - lastAdTimestamp;
-                const oneHour = 3600000; 
-                const btn = document.getElementById('mainAdBtn');
-                const timerText = document.getElementById('adCountdown');
-
-                if (dailyAdCount >= 12) {
-                    btn.disabled = true;
-                    btn.innerText = "DAILY LIMIT REACHED";
-                    timerText.style.display = 'none';
-                } else if (diff < oneHour) {
-                    btn.disabled = true;
-                    timerText.style.display = 'block';
-                    let remaining = oneHour - diff;
-                    let mins = Math.floor(remaining / 60000);
-                    let secs = Math.floor((remaining % 60000) / 1000);
-                    timerText.innerText = `Next Ad in: ${mins}:${secs < 10 ? '0'+secs : secs}`;
-                } else {
-                    btn.disabled = false;
-                    btn.innerText = "🎥 WATCH AD (+25 Coins)";
-                    timerText.style.display = 'none';
-                }
-            }, 1000);
-        }
-
-        function followInstaReward() {
-            if (!instaFollowed) {
-                window.open('https://www.instagram.com/babadeveloper1/', '_blank');
-                userCoins += 100;
-                instaFollowed = true;
-                localStorage.setItem('fb_insta_done', 'true');
-                updateCoinUI();
-                alert("100 Coins added for Following!");
-            }
-        }
-
-        function handleWithdraw() {
-            if (userCoins >= 10000) {
-                alert("Withdrawal Request for 500 PKR submitted! Our team will contact you soon.");
-            } else {
-                alert("Minimum 10,000 coins required to Withdraw!");
-            }
-        }
-
-        function watchAd(type) {
-            if (type === 'coins') {
-                if (dailyAdCount >= 12) return;
-                document.getElementById('ad-screen').style.display = 'flex';
-                setTimeout(() => {
-                    document.getElementById('ad-screen').style.display = 'none';
-                    userCoins += 25;
-                    dailyAdCount++;
-                    lastAdTimestamp = Date.now();
-                    localStorage.setItem('fb_daily_ads', dailyAdCount);
-                    localStorage.setItem('fb_last_ad_time', lastAdTimestamp);
-                    updateCoinUI();
-                    alert("25 Coins added! Daily Ads Left: " + (12 - dailyAdCount));
-                }, 3000);
-            } else {
-                // Game Ads (Hints/Moves)
-                document.getElementById('ad-screen').style.display = 'flex';
-                setTimeout(() => {
-                    document.getElementById('ad-screen').style.display = 'none';
-                    if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
-                    if(type === 'hint') findHint();
-                }, 2000);
-            }
-        }
-
-        function updateCoinUI() {
-            document.getElementById('rewardCoins').innerText = userCoins;
-            document.getElementById('gameCoins').innerText = userCoins;
-            document.getElementById('adLimitText').innerText = `Daily Ads: ${12 - dailyAdCount}/12 Left`;
-            
-            const wBtn = document.getElementById('withdrawBtn');
-            wBtn.disabled = userCoins < 10000;
-            
-            const iBtn = document.getElementById('instaBtn');
-            if(instaFollowed) {
-                iBtn.innerText = "INSTA FOLLOWED ✅";
-                iBtn.disabled = true;
-            }
-
-            localStorage.setItem('fb_coins', userCoins);
-        }
-
-        // --- ORIGINAL GAME LOGIC ---
-        function openRewards() { 
-            checkDailyReset();
-            updateCoinUI();
-            document.getElementById('rewards-overlay').style.display = 'flex'; 
-        }
-        function closeRewards() { document.getElementById('rewards-overlay').style.display = 'none'; }
-        function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
-        function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
-
-        function updateNameUI() {
-            document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
-            document.getElementById('player-display').innerText = playerName;
-            document.getElementById('playerNameInput').value = playerName;
-        }
-
-        function openNameChange() {
-            closeSettings();
-            document.getElementById('name-screen').style.display = 'flex';
-        }
-
-        function savePlayerName() {
-            const input = document.getElementById('playerNameInput').value.trim();
-            if (input === "") { alert("Please enter your name!"); return; }
-            playerName = input;
-            localStorage.setItem('fb_playername', playerName);
+    window.onload = () => {
+        checkDailyReset();
+        updateCoinUI();
+        startTimerLoop();
+        if (playerName !== "") {
             document.getElementById('name-screen').style.display = 'none';
             updateNameUI();
-            if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
+            startSplash();
         }
+    };
 
-        function startSplash() {
-            document.getElementById('splash').style.display = 'flex';
-            setTimeout(() => { 
-                document.getElementById('splash').style.display = 'none'; 
-                document.getElementById('main-menu').style.display = 'flex'; 
-            }, 1500);
+    // --- EARNING SYSTEM FUNCTIONS ---
+    function checkDailyReset() {
+        let today = new Date().toDateString();
+        if (lastResetDate !== today) {
+            dailyAdCount = 0;
+            lastResetDate = today;
+            localStorage.setItem('fb_daily_ads', 0);
+            localStorage.setItem('fb_reset_date', today);
         }
+    }
 
-        function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
-        
-        function playBGM() {
-            if(musicInterval) clearInterval(musicInterval);
-            let step = 0;
-            const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 293.66, 261.63]; 
-            
-            musicInterval = setInterval(() => {
-                if(!musicOn) return;
-                playNote(melody[step % melody.length], 0.3, 0.05);
-                step++;
-            }, 500);
-        }
+    function startTimerLoop() {
+        setInterval(() => {
+            const now = Date.now();
+            const diff = now - lastAdTimestamp;
+            const oneHour = 3600000;
+            const btn = document.getElementById('mainAdBtn');
+            const timerText = document.getElementById('adCountdown');
 
-        function playNote(freq, dur, vol = 0.05) {
-            if(!musicOn) return;
-            try {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-                osc.connect(gain); gain.connect(audioCtx.destination);
-                osc.start(); osc.stop(audioCtx.currentTime + dur);
-            } catch(e) {}
-        }
-
-        function toggleMusic() { 
-            musicOn = !musicOn; 
-            document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
-            document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇';
-        }
-
-        function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
-        function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
-        function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
-
-        function showLevelMenu() {
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'flex';
-            const container = document.getElementById('levelContainer'); 
-            container.innerHTML = '';
-            
-            for(let i = 1; i <= 250; i++) {
-                const node = document.createElement('div');
-                node.innerText = i;
-                node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-                if(i <= unlockedLevel) {
-                    node.onclick = () => startLevel(i);
-                }
-                container.appendChild(node);
+            if (dailyAdCount >= 12) {
+                btn.disabled = true;
+                btn.innerText = "DAILY LIMIT REACHED";
+                timerText.style.display = 'none';
+            } else if (diff < oneHour) {
+                btn.disabled = true;
+                timerText.style.display = 'block';
+                let remaining = oneHour - diff;
+                let mins = Math.floor(remaining / 60000);
+                let secs = Math.floor((remaining % 60000) / 1000);
+                timerText.innerText = `Next Ad in: ${mins}:${secs < 10 ? '0'+secs : secs}`;
+            } else {
+                btn.disabled = false;
+                btn.innerText = "🎥 WATCH AD (+25 Coins)";
+                timerText.style.display = 'none';
             }
-            
-            setTimeout(() => {
-                const activeNode = container.children[unlockedLevel - 1];
-                if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 100);
-        }
+        }, 1000);
+    }
 
-        function startLevel(lvl) {
-            currentLvl = lvl; 
-            targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 20 + Math.floor(lvl * 2.5);
-            initialTarget = targetCount; 
-            moves = Math.max(12, 28 - Math.floor(lvl / 5)); 
-            
-            iceTiles.clear();
-            if(lvl >= 5) {
-                let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
-                while(iceTiles.size < iceCount) {
-                    iceTiles.add(Math.floor(Math.random() * 64));
-                }
-            }
-
-            isGameActive = true;
-            document.getElementById('main-menu').style.display = 'none';
-            document.getElementById('level-menu').style.display = 'none';
-            document.getElementById('win-screen').style.display = 'none';
-            document.getElementById('game-ui').style.display = 'block';
-            document.getElementById('lvlShow').innerText = "Lvl " + lvl;
-            document.getElementById('movesShow').innerText = moves;
+    function followInstaReward() {
+        if (!instaFollowed) {
+            window.open('https://www.instagram.com/babadeveloper1/', '_blank');
+            userCoins += 100;
+            instaFollowed = true;
+            localStorage.setItem('fb_insta_done', 'true');
             updateCoinUI();
-            resetStars(); updateUI(); initGrid();
+            alert("100 Coins added for Following!");
+        }
+    }
+
+    function handleWithdraw() {
+        if (userCoins >= 10000) {
+            alert("Withdrawal Request for 500 PKR submitted! Our team will contact you soon.");
+        } else {
+            alert("Minimum 10,000 coins required to Withdraw!");
+        }
+    }
+
+    function watchAd(type) {
+        if (type === 'coins') {
+            if (dailyAdCount >= 12) return;
+            document.getElementById('ad-screen').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('ad-screen').style.display = 'none';
+                userCoins += 25;
+                dailyAdCount++;
+                lastAdTimestamp = Date.now();
+                localStorage.setItem('fb_daily_ads', dailyAdCount);
+                localStorage.setItem('fb_last_ad_time', lastAdTimestamp);
+                updateCoinUI();
+                alert("25 Coins added! Daily Ads Left: " + (12 - dailyAdCount));
+            }, 3000);
+        } else {
+            // Game Ads (Hints/Moves)
+            document.getElementById('ad-screen').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('ad-screen').style.display = 'none';
+                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
+                if(type === 'hint') findHint();
+            }, 2000);
+        }
+    }
+
+    function updateCoinUI() {
+        document.getElementById('rewardCoins').innerText = userCoins;
+        document.getElementById('gameCoins').innerText = userCoins;
+        document.getElementById('adLimitText').innerText = `Daily Ads: ${12 - dailyAdCount}/12 Left`;
+
+        const wBtn = document.getElementById('withdrawBtn');
+        wBtn.disabled = userCoins < 10000;
+
+        const iBtn = document.getElementById('instaBtn');
+        if(instaFollowed) {
+            iBtn.innerText = "INSTA FOLLOWED ✅";
+            iBtn.disabled = true;
         }
 
-        function initGrid() {
-            const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
-            for(let i=0; i<64; i++) {
-                const c = document.createElement('div'); 
-                c.className = 'candy' + (iceTiles.has(i) ? ' ice-tile' : ''); 
-                c.id = i;
-                let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
-                c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
+        localStorage.setItem('fb_coins', userCoins);
+    }
+
+    // --- ORIGINAL GAME LOGIC ---
+    function openRewards() {
+        checkDailyReset();
+        updateCoinUI();
+        document.getElementById('rewards-overlay').style.display = 'flex';
+    }
+    function closeRewards() { document.getElementById('rewards-overlay').style.display = 'none'; }
+    function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
+    function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
+
+    function updateNameUI() {
+        document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+        document.getElementById('player-display').innerText = playerName;
+        document.getElementById('playerNameInput').value = playerName;
+    }
+
+    function openNameChange() {
+        closeSettings();
+        document.getElementById('name-screen').style.display = 'flex';
+    }
+
+    function savePlayerName() {
+        const input = document.getElementById('playerNameInput').value.trim();
+        if (input === "") { alert("Please enter your name!"); return; }
+        playerName = input;
+        localStorage.setItem('fb_playername', playerName);
+        document.getElementById('name-screen').style.display = 'none';
+        updateNameUI();
+        if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
+    }
+
+    function startSplash() {
+        document.getElementById('splash').style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('splash').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
+        }, 1500);
+    }
+
+    function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
+
+    function playBGM() {
+        if(musicInterval) clearInterval(musicInterval);
+        let step = 0;
+        const melody = [261.63, 293.66, 329.63, 349.23, 392.00, 329.63, 293.66, 261.63];
+
+        musicInterval = setInterval(() => {
+            if(!musicOn) return;
+            playNote(melody[step % melody.length], 0.3, 0.05);
+            step++;
+        }, 500);
+    }
+
+    function playNote(freq, dur, vol = 0.05) {
+        if(!musicOn) return;
+        try {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + dur);
+        } catch(e) {}
+    }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
+        document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇';
+    }
+
+    function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
+    function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
+    function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
+
+    function showLevelMenu() {
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('level-menu').style.display = 'flex';
+        const container = document.getElementById('levelContainer');
+        container.innerHTML = '';
+
+        for(let i = 1; i <= 250; i++) {
+            const node = document.createElement('div');
+            node.innerText = i;
+            node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
+            if(i <= unlockedLevel) {
+                node.onclick = () => startLevel(i);
             }
-            setupTouch();
+            container.appendChild(node);
         }
 
-        function setupTouch() {
-            const grid = document.getElementById('grid');
-            grid.onpointerdown = e => {
-                if(!isGameActive || !e.target.classList.contains('candy')) return;
-                let idx = parseInt(e.target.id);
-                if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
-                if(iceTiles.has(idx)) return;
-                activeCandyIdx = idx;
-                startX = e.clientX; startY = e.clientY;
-            };
-            grid.onpointermove = e => {
-                if (activeCandyIdx === null) return;
-                const dx = e.clientX - startX; const dy = e.clientY - startY;
-                if (Math.abs(dx) > 25 || Math.abs(dy) > 25) {
-                    let target = activeCandyIdx;
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        if(dx > 0 && activeCandyIdx % 8 < 7) target += 1;
-                        else if(dx < 0 && activeCandyIdx % 8 > 0) target -= 1;
-                    } else {
-                        if(dy > 0 && activeCandyIdx < 56) target += 8;
-                        else if(dy < 0 && activeCandyIdx > 7) target -= 8;
-                    }
-                    if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
-                        swap(activeCandyIdx, target);
-                    }
-                    activeCandyIdx = null;
+        setTimeout(() => {
+            const activeNode = container.children[unlockedLevel - 1];
+            if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
+    }
+
+    function startLevel(lvl) {
+        currentLvl = lvl;
+        targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
+        targetCount = 20 + Math.floor(lvl * 2.5);
+        initialTarget = targetCount;
+        moves = Math.max(12, 28 - Math.floor(lvl / 5));
+
+        iceTiles.clear();
+        if(lvl >= 5) {
+            let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
+            while(iceTiles.size < iceCount) {
+                iceTiles.add(Math.floor(Math.random() * 64));
+            }
+        }
+
+        isGameActive = true;
+        document.getElementById('main-menu').style.display = 'none';
+        document.getElementById('level-menu').style.display = 'none';
+        document.getElementById('win-screen').style.display = 'none';
+        document.getElementById('game-ui').style.display = 'block';
+        document.getElementById('lvlShow').innerText = "Lvl " + lvl;
+        document.getElementById('movesShow').innerText = moves;
+        updateCoinUI();
+        resetStars(); updateUI(); initGrid();
+    }
+
+    function initGrid() {
+        const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
+        for(let i=0; i<64; i++) {
+            const c = document.createElement('div');
+            c.className = 'candy' + (iceTiles.has(i) ? ' ice-tile' : '');
+            c.id = i;
+            let fruit; do { fruit = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, fruit));
+            c.innerHTML = fruit; grid.appendChild(c); candies.push(c);
+        }
+        setupTouch();
+    }
+
+    function setupTouch() {
+        const grid = document.getElementById('grid');
+        grid.onpointerdown = e => {
+            if(!isGameActive || !e.target.classList.contains('candy')) return;
+            let idx = parseInt(e.target.id);
+            if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
+            if(iceTiles.has(idx)) return;
+            activeCandyIdx = idx;
+            startX = e.clientX; startY = e.clientY;
+        };
+        grid.onpointermove = e => {
+            if (activeCandyIdx === null) return;
+            const dx = e.clientX - startX; const dy = e.clientY - startY;
+            if (Math.abs(dx) > 25 || Math.abs(dy) > 25) {
+                let target = activeCandyIdx;
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if(dx > 0 && activeCandyIdx % 8 < 7) target += 1;
+                    else if(dx < 0 && activeCandyIdx % 8 > 0) target -= 1;
+                } else {
+                    if(dy > 0 && activeCandyIdx < 56) target += 8;
+                    else if(dy < 0 && activeCandyIdx > 7) target -= 8;
                 }
-            };
-            window.onpointerup = () => activeCandyIdx = null;
-        }
+                if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
+                    swap(activeCandyIdx, target);
+                }
+                activeCandyIdx = null;
+            }
+        };
+        window.onpointerup = () => activeCandyIdx = null;
+    }
 
-        function explodeBomb(idx) {
+    function explodeBomb(idx) {
+        moves--;
+        document.getElementById('movesShow').innerText = moves;
+        let row = Math.floor(idx / 8);
+        let col = idx % 8;
+        let toClear = new Set();
+        for(let r = row-1; r <= row+1; r++) {
+            for(let c = col-1; c <= col+1; c++) {
+                if(r >= 0 && r < 8 && c >= 0 && c < 8) {
+                    toClear.add(r * 8 + c);
+                }
+            }
+        }
+        clearMatchedTiles(toClear);
+        playNote(100, 0.4, 0.2);
+    }
+
+    function swap(id1, id2) {
+        let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
+        candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
+        if (checkMatches()) {
             moves--;
             document.getElementById('movesShow').innerText = moves;
-            let row = Math.floor(idx / 8);
-            let col = idx % 8;
-            let toClear = new Set();
-            for(let r = row-1; r <= row+1; r++) {
-                for(let c = col-1; c <= col+1; c++) {
-                    if(r >= 0 && r < 8 && c >= 0 && c < 8) {
-                        toClear.add(r * 8 + c);
-                    }
-                }
-            }
-            clearMatchedTiles(toClear);
-            playNote(100, 0.4, 0.2);
+            playNote(400, 0.1, 0.1);
+            processGameLogic();
+        } else {
+            setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
         }
+    }
 
-        function swap(id1, id2) {
-            let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
-            candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            if (checkMatches()) {
-                moves--; 
-                document.getElementById('movesShow').innerText = moves;
-                playNote(400, 0.1, 0.1);
-                processGameLogic();
-            } else {
-                setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
-            }
+    function checkMatches() {
+        let found = false;
+        for(let i=0; i<64; i++) {
+            if(candies[i].innerHTML === BOMB) continue;
+            if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) found=true;
+            if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) found=true;
         }
+        return found;
+    }
 
-        function checkMatches() {
-            let found = false;
-            for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === BOMB) continue;
-                if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) found=true;
-                if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) found=true;
+    function processGameLogic() {
+        let toClear = new Set();
+        let bombEligible = false;
+        for(let i=0; i<64; i++) {
+            if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
+            let hMatch = [i];
+            let nextH = i + 1;
+            while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) { hMatch.push(nextH); nextH++; }
+            if(hMatch.length >= 3) {
+                hMatch.forEach(idx => toClear.add(idx));
+                if(hMatch.length >= 4) bombEligible = true;
             }
-            return found;
-        }
-
-        function processGameLogic() {
-            let toClear = new Set();
-            let bombEligible = false;
-            for(let i=0; i<64; i++) {
-                if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
-                let hMatch = [i];
-                let nextH = i + 1;
-                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) { hMatch.push(nextH); nextH++; }
-                if(hMatch.length >= 3) {
-                    hMatch.forEach(idx => toClear.add(idx));
-                    if(hMatch.length >= 4) bombEligible = true;
-                }
-                let vMatch = [i];
-                let nextV = i + 8;
-                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) { vMatch.push(nextV); nextV += 8; }
-                if(vMatch.length >= 3) {
-                    vMatch.forEach(idx => toClear.add(idx));
-                    if(vMatch.length >= 4) bombEligible = true;
-                }
-            }
-            if(toClear.size > 0) {
-                let bombIdx = -1;
-                if(bombEligible) bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
-                clearMatchedTiles(toClear, bombIdx);
-                playNote(523, 0.2, 0.1);
-            } else {
-                checkEndGame();
+            let vMatch = [i];
+            let nextV = i + 8;
+            while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) { vMatch.push(nextV); nextV += 8; }
+            if(vMatch.length >= 3) {
+                vMatch.forEach(idx => toClear.add(idx));
+                if(vMatch.length >= 4) bombEligible = true;
             }
         }
+        if(toClear.size > 0) {
+            let bombIdx = -1;
+            if(bombEligible) bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
+            clearMatchedTiles(toClear, bombIdx);
+            playNote(523, 0.2, 0.1);
+        } else {
+            checkEndGame();
+        }
+    }
 
-        function clearMatchedTiles(toClear, bombIdx = -1) {
-            toClear.forEach(idx => {
-                if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-                if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
-                if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); } 
-                else { 
-                    candies[idx].innerHTML = ''; 
-                    candies[idx].classList.remove('bomb-tile'); 
-                    candies[idx].style.transform = 'scale(0)'; 
-                    userCoins += 1;
-                }
-            });
+    function clearMatchedTiles(toClear, bombIdx = -1) {
+        toClear.forEach(idx => {
+            if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
+            if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
+            if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); }
+            else {
+                candies[idx].innerHTML = '';
+                candies[idx].classList.remove('bomb-tile');
+                candies[idx].style.transform = 'scale(0)';
+                userCoins += 1;
+            }
+        });
+        updateCoinUI();
+        updateUI();
+        setTimeout(() => {
+            toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; });
+            fillGrid();
+        }, 300);
+    }
+
+    function fillGrid() {
+        let moved = false;
+        for(let i=55; i>=0; i--) {
+            if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
+                candies[i+8].innerHTML = candies[i].innerHTML;
+                candies[i+8].className = candies[i].className;
+                candies[i].innerHTML = '';
+                candies[i].className = 'candy';
+                moved = true;
+            }
+        }
+        for(let i=0; i<8; i++) {
+            if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
+                candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
+                moved = true;
+            }
+        }
+        if(moved) setTimeout(() => fillGrid(), 100);
+        else { if(checkMatches()) processGameLogic(); else checkEndGame(); }
+    }
+
+    function checkEndGame() {
+        if(targetCount <= 0 && iceTiles.size === 0) {
+            if(currentLvl == unlockedLevel && unlockedLevel < 250) {
+                unlockedLevel++;
+                localStorage.setItem('fb_unlocked', unlockedLevel);
+            }
+            userCoins += 20;
             updateCoinUI();
-            updateUI();
-            setTimeout(() => {
-                toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; });
-                fillGrid();
-            }, 300);
+            isGameActive = false;
+            document.getElementById('win-screen').style.display = 'flex';
+            playNote(659, 0.5, 0.2);
+        } else if(moves <= 0) {
+            isGameActive = false;
+            alert("GAME OVER!");
+            backToMenu();
         }
+    }
 
-        function fillGrid() {
-            let moved = false;
-            for(let i=55; i>=0; i--) {
-                if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
-                    candies[i+8].innerHTML = candies[i].innerHTML; 
-                    candies[i+8].className = candies[i].className;
-                    candies[i].innerHTML = '';
-                    candies[i].className = 'candy';
-                    moved = true;
-                }
-            }
-            for(let i=0; i<8; i++) {
-                if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
-                    candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-                    moved = true;
-                }
-            }
-            if(moved) setTimeout(() => fillGrid(), 100);
-            else { if(checkMatches()) processGameLogic(); else checkEndGame(); }
-        }
+    function playNextLevel() {
+        if(currentLvl < 250) startLevel(currentLvl + 1);
+        else { alert("COMPLETE!"); backToMenu(); }
+    }
 
-        function checkEndGame() {
-            if(targetCount <= 0 && iceTiles.size === 0) {
-                if(currentLvl == unlockedLevel && unlockedLevel < 250) {
-                    unlockedLevel++;
-                    localStorage.setItem('fb_unlocked', unlockedLevel);
-                }
-                userCoins += 20;
-                updateCoinUI();
-                isGameActive = false; 
-                document.getElementById('win-screen').style.display = 'flex';
-                playNote(659, 0.5, 0.2);
-            } else if(moves <= 0) {
-                isGameActive = false; 
-                alert("GAME OVER!"); 
-                backToMenu();
-            }
-        }
+    function willMatch(i, fruit) {
+        if (i % 8 >= 2 && candies[i-1].innerHTML === fruit && candies[i-2].innerHTML === fruit) return true;
+        if (i >= 16 && candies[i-8].innerHTML === fruit && candies[i-16].innerHTML === fruit) return true;
+        return false;
+    }
 
-        function playNextLevel() {
-            if(currentLvl < 250) startLevel(currentLvl + 1);
-            else { alert("COMPLETE!"); backToMenu(); }
-        }
+    function updateUI() {
+        document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
+        const iceUI = document.getElementById('iceShow');
+        iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE: ${iceTiles.size}` : "";
+        let percent = ((initialTarget - targetCount) / initialTarget) * 100;
+        document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
+        if(percent >= 33) document.getElementById('star1').classList.add('active');
+        if(percent >= 66) document.getElementById('star2').classList.add('active');
+        if(percent >= 100) document.getElementById('star3').classList.add('active');
+    }
 
-        function willMatch(i, fruit) {
-            if (i % 8 >= 2 && candies[i-1].innerHTML === fruit && candies[i-2].innerHTML === fruit) return true;
-            if (i >= 16 && candies[i-8].innerHTML === fruit && candies[i-16].innerHTML === fruit) return true;
-            return false;
-        }
-
-        function updateUI() {
-            document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
-            const iceUI = document.getElementById('iceShow');
-            iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE: ${iceTiles.size}` : "";
-            let percent = ((initialTarget - targetCount) / initialTarget) * 100;
-            document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
-            if(percent >= 33) document.getElementById('star1').classList.add('active');
-            if(percent >= 66) document.getElementById('star2').classList.add('active');
-            if(percent >= 100) document.getElementById('star3').classList.add('active');
-        }
-
-        function findHint() {
-            for(let i=0; i<64; i++) {
-                if(iceTiles.has(i) || candies[i].innerHTML === BOMB) continue;
-                let neighbors = [];
-                if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
-                if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
-                for(let n of neighbors) {
-                    if(checkSwapMatch(i, n)) {
-                        candies[i].classList.add('hint-active');
-                        candies[n].classList.add('hint-active');
-                        setTimeout(() => { 
-                            candies[i].classList.remove('hint-active'); 
-                            candies[n].classList.remove('hint-active'); 
-                        }, 2000);
-                        return;
-                    }
+    function findHint() {
+        for(let i=0; i<64; i++) {
+            if(iceTiles.has(i) || candies[i].innerHTML === BOMB) continue;
+            let neighbors = [];
+            if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
+            if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
+            for(let n of neighbors) {
+                if(checkSwapMatch(i, n)) {
+                    candies[i].classList.add('hint-active');
+                    candies[n].classList.add('hint-active');
+                    setTimeout(() => {
+                        candies[i].classList.remove('hint-active');
+                        candies[n].classList.remove('hint-active');
+                    }, 2000);
+                    return;
                 }
             }
         }
+    }
 
-        function checkSwapMatch(i, n) {
-            let v1 = candies[i].innerHTML, v2 = candies[n].innerHTML;
-            candies[i].innerHTML = v2; candies[n].innerHTML = v1;
-            let m = checkMatches();
-            candies[i].innerHTML = v1; candies[n].innerHTML = v2;
-            return m;
-        }
+    function checkSwapMatch(i, n) {
+        let v1 = candies[i].innerHTML, v2 = candies[n].innerHTML;
+        candies[i].innerHTML = v2; candies[n].innerHTML = v1;
+        let m = checkMatches();
+        candies[i].innerHTML = v1; candies[n].innerHTML = v2;
+        return m;
+    }
 
-        function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
-        function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-        function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-    </script>
+    function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
+    function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+    function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+</script>
 </body>
 </html>
