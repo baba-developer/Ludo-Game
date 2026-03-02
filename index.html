@@ -184,58 +184,70 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
     <script>
-        // --- ASLI FIREBASE CONFIG (Updated) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyDezQgp0DB66-zAtfxdO49rl2BqQbBFhfw",
-            authDomain: "frutix-blast.firebaseapp.com",
-            databaseURL: "https://frutix-blast-default-rtdb.firebaseio.com",
-            projectId: "frutix-blast",
-            storageBucket: "frutix-blast.appspot.com",
-            messagingSenderId: "6435529628",
-            appId: "1:6435529628:web:6a2306492379c8280a9e59"
-        };
+        const scriptURL = "https://script.google.com/macros/s/AKfycbxVleApCX2zc5lLefLXzYtgc9U73Qusdisvm-v0SsQYOhQx9UkevmJ5PedUFQBFE524/exec";
+            // --- ASLI FIREBASE CONFIG (Updated) ---
+            const firebaseConfig = {
+                apiKey: "AIzaSyDezQgp0DB66-zAtfxdO49rl2BqQbBFhfw",
+                authDomain: "frutix-blast.firebaseapp.com",
+                databaseURL: "https://frutix-blast-default-rtdb.firebaseio.com",
+                projectId: "frutix-blast",
+                storageBucket: "frutix-blast.appspot.com",
+                messagingSenderId: "6435529628",
+                appId: "1:6435529628:web:6a2306492379c8280a9e59"
+            };
 
-        // Firebase Initialize
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const database = firebase.database();
-        };
-
-
-        // --- WITHDRAWAL FUNCTION ---
-        function requestWithdrawal() {
-            if (typeof userCoins !== 'undefined' && userCoins < 10000) {
-                alert("Kam az kam 10,000 coins chahiye! Aapke paas " + userCoins + " hain.");
-                return;
+            // Firebase Initialize
+            if (!firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
             }
+            const database = firebase.database();
 
-            const pNumber = prompt("EasyPaisa/JazzCash Number likhein:");
-            if (pNumber) {
-                const requestID = Date.now();
-                database.ref('withdraw_requests/' + requestID).set({
-                    username: typeof playerName !== 'undefined' ? playerName : "Guest User",
-                    amount: userCoins,
+
+
+            // --- WITHDRAWAL FUNCTION ---
+            function handleWithdraw() {
+        if (typeof userCoins !== 'undefined' && userCoins < 10000) {
+            alert("Kam az kam 10,000 coins chahiye! Aapke paas " + userCoins + " hain.");
+            return;
+        }
+
+        const pNumber = prompt("EasyPaisa/JazzCash Number likhein:");
+        if (pNumber && pNumber.length >= 10) {
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    action: "withdraw",
+                    name: typeof playerName !== 'undefined' ? playerName : "Guest",
                     account: pNumber,
-                    status: "Pending",
-                    date: new Date().toLocaleString()
-                }).then(() => {
-                    alert("✅ Request bhej di gayi hai! Payment jald mil jayegi.");
-                }).catch((e) => alert("Error: " + e.message));
-            }
+                    amount: userCoins,
+                    status: "Pending"
+                })
+            }).then(() => {
+                alert("✅ Request Google Sheet mein bhej di gayi hai!");
+            });
         }
+    }
+            function savePlayerName() {
+        const inputName = document.getElementById('playerNameInput').value;
+        if (inputName) {
+            playerName = inputName;
+            localStorage.setItem("pName", playerName);
+            document.getElementById('name-screen').style.display = 'none';
 
-        // --- DATA SAVE FUNCTION ---
-        function saveToFirebase() {
-            if (typeof playerName !== 'undefined' && playerName !== "") {
-                const userPath = 'players/' + playerName.toLowerCase().replace(/\s/g, '');
-                database.ref(userPath).set({
+            // Google Sheet (user tab) mein bhejien
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    action: "register",
                     name: playerName,
-                    coins: userCoins,
-                    level: unlockedLevel,
-                    lastUpdate: Date.now()
-                });
-            }
+                    phone: "New User", // Aap prompt se phone bhi le sakte hain
+                    coins: 0
+                })
+            });
+        }
+    }
     </script>
 </head>
 <body onclick="initAudio()">
@@ -781,6 +793,14 @@
             isGameActive = false;
             alert("GAME OVER!");
             backToMenu();
+            // Line 791 ke niche ye paste karein
+        const withdrawBtn = document.createElement('button');
+        withdrawBtn.innerText = "💰 Withdraw Coins";
+        withdrawBtn.style = "background: #4CAF50; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px; font-weight: bold; width: 100%;";
+        withdrawBtn.onclick = sendWithdrawRequest;
+
+        // Isay Game Over wali screen (win-screen) par dikhayein
+        document.getElementById('win-screen').appendChild(withdrawBtn);
         }
     }
 
@@ -837,6 +857,7 @@
     function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
     function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
+   
 </script>
 </body>
 </html>
