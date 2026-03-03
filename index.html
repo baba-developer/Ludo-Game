@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - 250 Levels</title>
+    <title>Frutix Blast - 700 Levels</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
@@ -134,7 +134,6 @@
             user-select: none; position: relative;
         }
 
-        /* ICE STYLING */
         .ice-tile {
             background: rgba(173, 216, 230, 0.7) !important;
             border: 2px solid #fff;
@@ -150,7 +149,6 @@
             opacity: 0.8;
         }
 
-        /* BOMB STYLING */
         .bomb-tile {
             background: radial-gradient(circle, #ff4d4d, #1a1a2e) !important;
             animation: pulse 0.5s infinite alternate;
@@ -239,7 +237,7 @@
     </div>
 
     <div id="level-menu">
-        <h2>LEVELS (1-250)</h2>
+        <h2>LEVELS (1-700)</h2>
         <div class="map-container" id="mapScroll">
             <div class="level-path" id="levelContainer"></div>
         </div>
@@ -369,7 +367,7 @@
             const container = document.getElementById('levelContainer'); 
             container.innerHTML = '';
             
-            for(let i = 1; i <= 250; i++) {
+            for(let i = 1; i <= 700; i++) {
                 const node = document.createElement('div');
                 node.innerText = i;
                 node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
@@ -388,13 +386,13 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 20 + Math.floor(lvl * 2.5);
+            targetCount = 20 + Math.floor(lvl * 1.5); // Slightly adjusted for 700 levels balance
             initialTarget = targetCount; 
-            moves = Math.max(12, 28 - Math.floor(lvl / 5)); 
+            moves = Math.max(10, 30 - Math.floor(lvl / 15)); 
             
             iceTiles.clear();
             if(lvl >= 5) {
-                let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
+                let iceCount = Math.min(30, 5 + Math.floor(lvl / 10));
                 while(iceTiles.size < iceCount) {
                     iceTiles.add(Math.floor(Math.random() * 64));
                 }
@@ -428,7 +426,6 @@
                 if(!isGameActive || !e.target.classList.contains('candy')) return;
                 let idx = parseInt(e.target.id);
                 
-                // BOMB CLICK LOGIC
                 if(candies[idx].innerHTML === BOMB) {
                     explodeBomb(idx);
                     return;
@@ -476,7 +473,7 @@
             }
 
             clearMatchedTiles(toClear);
-            playNote(150, 0.2); // Explosion sound effect
+            playNote(150, 0.2);
         }
 
         function swap(id1, id2) {
@@ -509,7 +506,6 @@
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
                 
-                // Horizontal matches
                 let hMatch = [i];
                 let nextH = i + 1;
                 while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) {
@@ -521,7 +517,6 @@
                     if(hMatch.length >= 4) bombEligible = true;
                 }
 
-                // Vertical matches
                 let vMatch = [i];
                 let nextV = i + 8;
                 while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) {
@@ -535,7 +530,6 @@
             }
             
             if(toClear.size > 0) {
-                // If 4+ match, turn one of the cleared tiles into a bomb
                 let bombIdx = -1;
                 if(bombEligible) {
                     bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
@@ -603,9 +597,8 @@
         }
 
         function checkEndGame() {
-            // New Condition: Level clears only if Target Fruit is done AND all Ice is gone
             if(targetCount <= 0 && iceTiles.size === 0) {
-                if(currentLvl == unlockedLevel && unlockedLevel < 250) {
+                if(currentLvl == unlockedLevel && unlockedLevel < 700) {
                     unlockedLevel++;
                     localStorage.setItem('fb_unlocked', unlockedLevel);
                 }
@@ -619,10 +612,10 @@
         }
 
         function playNextLevel() {
-            if(currentLvl < 250) {
+            if(currentLvl < 700) {
                 startLevel(currentLvl + 1);
             } else {
-                alert("CONGRATULATIONS! ALL LEVELS COMPLETE!");
+                alert("CONGRATULATIONS! ALL 700 LEVELS COMPLETE!");
                 backToMenu();
             }
         }
@@ -635,8 +628,6 @@
 
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
-            
-            // Show Ice Count in UI
             const iceUI = document.getElementById('iceShow');
             if(iceTiles.size > 0) {
                 iceUI.innerText = `❄️ ICE REMAINING: ${iceTiles.size}`;
