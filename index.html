@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Frutix Blast - 700 Levels</title>
+    <title>Frutix Blast - 700 Levels with Rewards</title>
     <style>
         body { 
             margin: 0; background: #1a1a2e; height: 100vh; 
             display: flex; flex-direction: column; align-items: center; 
             justify-content: center; font-family: 'Segoe UI', sans-serif; 
             overflow: hidden; touch-action: none; color: white;
+        }
+
+        /* Coin Display */
+        #coin-balance-display {
+            position: fixed; top: 15px; left: 15px; background: rgba(0,0,0,0.6);
+            padding: 5px 15px; border-radius: 20px; border: 2px solid #f9d342;
+            color: #f9d342; font-weight: bold; z-index: 40000; display: flex; align-items: center;
+            font-size: 14px;
         }
 
         #music-toggle-icon {
@@ -160,10 +168,10 @@
 
         @media(min-width: 450px) { .candy { font-size: 28px; } }
 
-        .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; }
+        .rewards-footer { display: flex; gap: 8px; justify-content: center; margin-top: 15px; width: 100%; padding: 0 10px; box-sizing: border-box;}
         .reward-btn {
             background: #28a745; color: white; border: none; padding: 8px 10px;
-            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 11px;
+            border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 10px;
             box-shadow: 0 3px #1e7e34; flex: 1; max-width: 140px;
         }
 
@@ -176,10 +184,12 @@
 </head>
 <body onclick="initAudio()">
 
+    <div id="coin-balance-display">🪙 <span id="total-coins">0</span></div>
     <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
 
     <div id="win-screen">
-        <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
+        <h1 style="color: #f9d342; font-size: 35px; margin: 10px;">LEVEL CLEAR!</h1>
+        <h2 style="color: #28a745; margin: 5px;">+50 REWARD 🪙</h2>
         <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
         <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
         <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
@@ -188,10 +198,10 @@
     <div id="privacy-overlay">
         <h2>PRIVACY POLICY</h2>
         <div class="policy-content">
-            <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally on your device.</p>
-            <p><b>Ads:</b> We use third-party ads to keep the game free. These providers may use device identifiers.</p>
-            <p><b>Security:</b> Your privacy is our priority. No data is shared with external parties.</p>
-            <p><b>Agreement:</b> By playing Frutix Blast, you agree to these terms.</p>
+            <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally.</p>
+            <p><b>Ads:</b> We use third-party ads to keep the game free.</p>
+            <p><b>Security:</b> Your privacy is our priority.</p>
+            <p><b>Agreement:</b> By playing, you agree to these terms.</p>
         </div>
         <button class="btn" onclick="closePrivacy()">CLOSE</button>
     </div>
@@ -226,11 +236,9 @@
         <div class="menu-content">
             <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
             <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
-            <p style="margin-bottom: 10px;">Premium Blast Game</p>
             <button class="btn" onclick="showLevelMenu()">PLAY GAME</button>
             <button class="btn" onclick="window.open('https://www.instagram.com/babadeveloper1/', '_blank')" style="background:#C13584; box-shadow: 0 4px #833AB4;">FOLLOW US</button>
             <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
-            <button class="btn" onclick="contactDev()" style="background:#27ae60; box-shadow: 0 4px #1e8449;">CONTACT US</button>
             <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
         </div>
         <div class="dev-footer">POWERED BY <a href="https://www.instagram.com/babadeveloper1/" target="_blank">@BABADEVELOPER</a></div>
@@ -242,7 +250,6 @@
             <div class="level-path" id="levelContainer"></div>
         </div>
         <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
-        <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
     </div>
 
     <div id="game-ui">
@@ -266,7 +273,7 @@
 
         <div class="rewards-footer">
             <button class="reward-btn" onclick="watchAd('hint')">💡 HINT (AD)</button>
-            <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (AD)</button>
+            <button class="reward-btn" onclick="buyMoves()" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (50🪙)</button>
         </div>
     </div>
 
@@ -275,6 +282,7 @@
         const BOMB = '💣';
         let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
         let playerName = localStorage.getItem('fb_playername') || "";
+        let coins = parseInt(localStorage.getItem('fb_coins')) || 100;
         let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
         let isGameActive = false, audioInited = false;
         let startX, startY, activeCandyIdx = null;
@@ -284,6 +292,7 @@
         let musicInterval;
 
         window.onload = () => {
+            updateCoinUI();
             if (playerName !== "") {
                 document.getElementById('name-screen').style.display = 'none';
                 updateNameUI();
@@ -291,22 +300,27 @@
             }
         };
 
-        function contactDev() {
-            window.location.href = "mailto:babadeveloper1@gmail.com?subject=Frutix%20Blast%20Support&body=Hi%20Baba%20Developer,";
+        function updateCoinUI() {
+            document.getElementById('total-coins').innerText = coins;
+            localStorage.setItem('fb_coins', coins);
         }
 
-        function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
-        function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
+        function buyMoves() {
+            if(coins >= 50) {
+                coins -= 50;
+                moves += 5;
+                updateCoinUI();
+                document.getElementById('movesShow').innerText = moves;
+                playNote(440, 0.2);
+            } else {
+                alert("Not enough coins! Level jeet kar coins jama karein.");
+            }
+        }
 
         function updateNameUI() {
             document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
             document.getElementById('player-display').innerText = playerName;
             document.getElementById('playerNameInput').value = playerName;
-        }
-
-        function openNameChange() {
-            closeSettings();
-            document.getElementById('name-screen').style.display = 'flex';
         }
 
         function savePlayerName() {
@@ -360,23 +374,22 @@
         function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
         function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
         function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
+        function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
+        function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
+        function openNameChange() { closeSettings(); document.getElementById('name-screen').style.display = 'flex'; }
 
         function showLevelMenu() {
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'flex';
             const container = document.getElementById('levelContainer'); 
             container.innerHTML = '';
-            
             for(let i = 1; i <= 700; i++) {
                 const node = document.createElement('div');
                 node.innerText = i;
                 node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-                if(i <= unlockedLevel) {
-                    node.onclick = () => startLevel(i);
-                }
+                if(i <= unlockedLevel) node.onclick = () => startLevel(i);
                 container.appendChild(node);
             }
-            
             setTimeout(() => {
                 const activeNode = container.children[unlockedLevel - 1];
                 if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -386,18 +399,14 @@
         function startLevel(lvl) {
             currentLvl = lvl; 
             targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
-            targetCount = 20 + Math.floor(lvl * 1.5); // Slightly adjusted for 700 levels balance
+            targetCount = 20 + Math.floor(lvl * 1.5);
             initialTarget = targetCount; 
             moves = Math.max(10, 30 - Math.floor(lvl / 15)); 
-            
             iceTiles.clear();
             if(lvl >= 5) {
                 let iceCount = Math.min(30, 5 + Math.floor(lvl / 10));
-                while(iceTiles.size < iceCount) {
-                    iceTiles.add(Math.floor(Math.random() * 64));
-                }
+                while(iceTiles.size < iceCount) iceTiles.add(Math.floor(Math.random() * 64));
             }
-
             isGameActive = true;
             document.getElementById('main-menu').style.display = 'none';
             document.getElementById('level-menu').style.display = 'none';
@@ -425,15 +434,9 @@
             grid.onpointerdown = e => {
                 if(!isGameActive || !e.target.classList.contains('candy')) return;
                 let idx = parseInt(e.target.id);
-                
-                if(candies[idx].innerHTML === BOMB) {
-                    explodeBomb(idx);
-                    return;
-                }
-
+                if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
                 if(iceTiles.has(idx)) return;
-                activeCandyIdx = idx;
-                startX = e.clientX; startY = e.clientY;
+                activeCandyIdx = idx; startX = e.clientX; startY = e.clientY;
             };
             grid.onpointermove = e => {
                 if (activeCandyIdx === null) return;
@@ -447,9 +450,7 @@
                         if(dy > 0 && activeCandyIdx < 56) target += 8;
                         else if(dy < 0 && activeCandyIdx > 7) target -= 8;
                     }
-                    if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
-                        swap(activeCandyIdx, target);
-                    }
+                    if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) swap(activeCandyIdx, target);
                     activeCandyIdx = null;
                 }
             };
@@ -457,36 +458,21 @@
         }
 
         function explodeBomb(idx) {
-            moves--;
-            document.getElementById('movesShow').innerText = moves;
-            
-            let row = Math.floor(idx / 8);
-            let col = idx % 8;
-            let toClear = new Set();
-
+            moves--; document.getElementById('movesShow').innerText = moves;
+            let row = Math.floor(idx / 8), col = idx % 8, toClear = new Set();
             for(let r = row-1; r <= row+1; r++) {
                 for(let c = col-1; c <= col+1; c++) {
-                    if(r >= 0 && r < 8 && c >= 0 && c < 8) {
-                        toClear.add(r * 8 + c);
-                    }
+                    if(r >= 0 && r < 8 && c >= 0 && c < 8) toClear.add(r * 8 + c);
                 }
             }
-
-            clearMatchedTiles(toClear);
-            playNote(150, 0.2);
+            clearMatchedTiles(toClear); playNote(150, 0.2);
         }
 
         function swap(id1, id2) {
             let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
             candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-            
-            if (checkMatches()) {
-                moves--; 
-                document.getElementById('movesShow').innerText = moves;
-                processGameLogic();
-            } else {
-                setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
-            }
+            if (checkMatches()) { moves--; document.getElementById('movesShow').innerText = moves; processGameLogic(); }
+            else setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
         }
 
         function checkMatches() {
@@ -500,126 +486,57 @@
         }
 
         function processGameLogic() {
-            let toClear = new Set();
-            let bombEligible = false;
-
+            let toClear = new Set(), bombEligible = false;
             for(let i=0; i<64; i++) {
                 if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
-                
-                let hMatch = [i];
-                let nextH = i + 1;
-                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) {
-                    hMatch.push(nextH);
-                    nextH++;
-                }
-                if(hMatch.length >= 3) {
-                    hMatch.forEach(idx => toClear.add(idx));
-                    if(hMatch.length >= 4) bombEligible = true;
-                }
-
-                let vMatch = [i];
-                let nextV = i + 8;
-                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) {
-                    vMatch.push(nextV);
-                    nextV += 8;
-                }
-                if(vMatch.length >= 3) {
-                    vMatch.forEach(idx => toClear.add(idx));
-                    if(vMatch.length >= 4) bombEligible = true;
-                }
+                let hMatch = [i], nextH = i + 1;
+                while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) { hMatch.push(nextH); nextH++; }
+                if(hMatch.length >= 3) { hMatch.forEach(idx => toClear.add(idx)); if(hMatch.length >= 4) bombEligible = true; }
+                let vMatch = [i], nextV = i + 8;
+                while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) { vMatch.push(nextV); nextV += 8; }
+                if(vMatch.length >= 3) { vMatch.forEach(idx => toClear.add(idx)); if(vMatch.length >= 4) bombEligible = true; }
             }
-            
             if(toClear.size > 0) {
-                let bombIdx = -1;
-                if(bombEligible) {
-                    bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
-                }
-
+                let bombIdx = bombEligible ? Array.from(toClear)[Math.floor(Math.random() * toClear.size)] : -1;
                 clearMatchedTiles(toClear, bombIdx);
-            } else {
-                checkEndGame();
-            }
+            } else checkEndGame();
         }
 
         function clearMatchedTiles(toClear, bombIdx = -1) {
             toClear.forEach(idx => {
                 if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-                
-                if(iceTiles.has(idx)) {
-                    iceTiles.delete(idx);
-                    candies[idx].classList.remove('ice-tile');
-                }
-
-                if(idx === bombIdx) {
-                    candies[idx].innerHTML = BOMB;
-                    candies[idx].classList.add('bomb-tile');
-                } else {
-                    candies[idx].innerHTML = '';
-                    candies[idx].classList.remove('bomb-tile');
-                    candies[idx].style.transform = 'scale(0)';
-                }
+                if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
+                if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); }
+                else { candies[idx].innerHTML = ''; candies[idx].classList.remove('bomb-tile'); candies[idx].style.transform = 'scale(0)'; }
             });
-            
             updateUI();
-            
-            setTimeout(() => {
-                toClear.forEach(idx => {
-                    if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)';
-                });
-                fillGrid();
-            }, 300);
+            setTimeout(() => { toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; }); fillGrid(); }, 300);
         }
 
         function fillGrid() {
             let moved = false;
             for(let i=55; i>=0; i--) {
                 if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
-                    candies[i+8].innerHTML = candies[i].innerHTML; 
-                    candies[i+8].className = candies[i].className;
-                    candies[i].innerHTML = '';
-                    candies[i].className = 'candy';
-                    moved = true;
+                    candies[i+8].innerHTML = candies[i].innerHTML; candies[i+8].className = candies[i].className;
+                    candies[i].innerHTML = ''; candies[i].className = 'candy'; moved = true;
                 }
             }
-            
-            for(let i=0; i<8; i++) {
-                if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
-                    candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
-                    moved = true;
-                }
-            }
-            
+            for(let i=0; i<8; i++) if(candies[i].innerHTML === '' && !iceTiles.has(i)) { candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)]; moved = true; }
             if(moved) setTimeout(() => fillGrid(), 100);
-            else {
-                if(checkMatches()) processGameLogic();
-                else checkEndGame();
-            }
+            else checkMatches() ? processGameLogic() : checkEndGame();
         }
 
         function checkEndGame() {
             if(targetCount <= 0 && iceTiles.size === 0) {
-                if(currentLvl == unlockedLevel && unlockedLevel < 700) {
-                    unlockedLevel++;
-                    localStorage.setItem('fb_unlocked', unlockedLevel);
-                }
-                isGameActive = false; 
-                document.getElementById('win-screen').style.display = 'flex';
+                if(currentLvl == unlockedLevel && unlockedLevel < 700) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
+                coins += 50; updateCoinUI();
+                isGameActive = false; document.getElementById('win-screen').style.display = 'flex';
             } else if(moves <= 0) {
-                isGameActive = false; 
-                alert("GAME OVER! Target ya Ice reh gayi!"); 
-                backToMenu();
+                isGameActive = false; alert("GAME OVER!"); backToMenu();
             }
         }
 
-        function playNextLevel() {
-            if(currentLvl < 700) {
-                startLevel(currentLvl + 1);
-            } else {
-                alert("CONGRATULATIONS! ALL 700 LEVELS COMPLETE!");
-                backToMenu();
-            }
-        }
-
+        function playNextLevel() { currentLvl < 700 ? startLevel(currentLvl + 1) : backToMenu(); }
         function willMatch(i, fruit) {
             if (i % 8 >= 2 && candies[i-1].innerHTML === fruit && candies[i-2].innerHTML === fruit) return true;
             if (i >= 16 && candies[i-8].innerHTML === fruit && candies[i-16].innerHTML === fruit) return true;
@@ -629,12 +546,7 @@
         function updateUI() {
             document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
             const iceUI = document.getElementById('iceShow');
-            if(iceTiles.size > 0) {
-                iceUI.innerText = `❄️ ICE REMAINING: ${iceTiles.size}`;
-            } else {
-                iceUI.innerText = "";
-            }
-
+            iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE: ${iceTiles.size}` : "";
             let percent = ((initialTarget - targetCount) / initialTarget) * 100;
             document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
             if(percent >= 33) document.getElementById('star1').classList.add('active');
@@ -646,7 +558,6 @@
             document.getElementById('ad-screen').style.display = 'flex';
             setTimeout(() => {
                 document.getElementById('ad-screen').style.display = 'none';
-                if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
                 if(type === 'hint') findHint();
             }, 2000);
         }
@@ -657,17 +568,10 @@
                 let neighbors = [];
                 if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
                 if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
-                
-                for(let n of neighbors) {
-                    if(checkSwapMatch(i, n)) {
-                        candies[i].classList.add('hint-active');
-                        candies[n].classList.add('hint-active');
-                        setTimeout(() => { 
-                            candies[i].classList.remove('hint-active'); 
-                            candies[n].classList.remove('hint-active'); 
-                        }, 2000);
-                        return;
-                    }
+                for(let n of neighbors) if(checkSwapMatch(i, n)) {
+                    candies[i].classList.add('hint-active'); candies[n].classList.add('hint-active');
+                    setTimeout(() => { candies[i].classList.remove('hint-active'); candies[n].classList.remove('hint-active'); }, 2000);
+                    return;
                 }
             }
         }
@@ -680,10 +584,7 @@
             return m;
         }
 
-        function resetStars() {
-            document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-        }
-
+        function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
         function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
         function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     </script>
