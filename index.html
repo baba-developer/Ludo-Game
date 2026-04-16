@@ -311,15 +311,24 @@
             document.getElementById('name-screen').style.display = 'flex';
         }
 
-        function savePlayerName() {
-            const input = document.getElementById('playerNameInput').value.trim();
-            if (input === "") { alert("Please enter your name!"); return; }
-            playerName = input;
-            localStorage.setItem('fb_playername', playerName);
-            document.getElementById('name-screen').style.display = 'none';
-            updateNameUI();
-            if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
-        }
+       function savePlayerName() {
+    const input = document.getElementById('playerNameInput').value.trim();
+    if (input === "") { alert("Please enter your name!"); return; }
+    
+    playerName = input;
+    localStorage.setItem('fb_playername', playerName);
+    
+    // YAHAN APNA URL PASTE KAREIN
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbwNE0b6vF0lCo_tAZJ6A7L6Sy0oQ5eNUkk8GlFQ6bwIOlLmyAbBFR_ezHBl1G6hNqCt/exec';
+    
+    fetch(scriptURL + '?name=' + encodeURIComponent(playerName), { mode: 'no-cors' })
+    .then(() => console.log("Success"))
+    .catch(err => console.log("Error"));
+
+    document.getElementById('name-screen').style.display = 'none';
+    updateNameUI();
+    if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
+}
 
         function startSplash() {
             document.getElementById('splash').style.display = 'flex';
