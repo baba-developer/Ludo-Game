@@ -134,7 +134,6 @@
             user-select: none; position: relative;
         }
 
-        /* ICE STYLING */
         .ice-tile {
             background: rgba(173, 216, 230, 0.7) !important;
             border: 2px solid #fff;
@@ -150,7 +149,6 @@
             opacity: 0.8;
         }
 
-        /* BOMB STYLING */
         .bomb-tile {
             background: radial-gradient(circle, #ff4d4d, #1a1a2e) !important;
             animation: pulse 0.5s infinite alternate;
@@ -174,6 +172,13 @@
             50% { transform: scale(1.1); background: #f9d342; box-shadow: 0 0 15px #f9d342; }
         }
         .hint-active { animation: hint-glow 0.6s infinite; z-index: 100; }
+        
+        /* Coin UI Style */
+        .coin-box {
+            background: rgba(0,0,0,0.5); padding: 5px 12px; border-radius: 20px;
+            color: #f9d342; font-weight: bold; display: flex; align-items: center;
+            border: 1px solid #f9d342; font-size: 14px;
+        }
     </style>
 </head>
 <body onclick="initAudio()">
@@ -182,6 +187,7 @@
 
 <div id="win-screen">
     <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
+    <p style="color: #fff;">+50 Coins Awarded!</p>
     <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
     <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
     <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
@@ -214,7 +220,7 @@
 </div>
 
 <div id="ad-screen">
-    <h3>REWARD LOADING...</h3>
+    <h3 id="ad-text">WATCHING AD...</h3>
     <div class="loader-circle"></div>
 </div>
 
@@ -225,6 +231,7 @@
 </div>
 
 <div id="main-menu">
+    <div style="position: absolute; top: 15px; left: 15px;" class="coin-box">💰 <span class="coin-display">500</span></div>
     <div class="menu-content">
         <h3 id="welcome-text" style="color: #f9d342; margin: 0;">Hi, Player!</h3>
         <h1 style="color: #e94560; font-size: 48px; margin: 0;">FRUTIX</h1>
@@ -241,6 +248,7 @@
 </div>
 
 <div id="level-menu">
+    <div style="position: absolute; top: 15px; left: 15px;" class="coin-box">💰 <span class="coin-display">500</span></div>
     <h2>LEVELS (1-250)</h2>
     <div class="map-container" id="mapScroll">
         <div class="level-path" id="levelContainer"></div>
@@ -252,7 +260,7 @@
 <div id="game-ui">
     <div style="display: flex; justify-content: space-between; align-items:center; padding: 10px; width: 95%;">
         <button onclick="backToMenu()" style="background:#444; color:white; border:none; padding:8px 12px; border-radius:5px; font-size:12px;">EXIT</button>
-        <span id="player-display" style="color:#f9d342; font-weight:bold; font-size:14px;">Player</span>
+        <div class="coin-box">💰 <span class="coin-display">500</span></div>
         <b id="lvlShow" style="font-size: 18px;">Lvl 1</b>
     </div>
 
@@ -269,8 +277,9 @@
     <div id="grid"></div>
 
     <div class="rewards-footer">
-        <button class="reward-btn" onclick="watchAd('hint')">💡 HINT (AD)</button>
-        <button class="reward-btn" onclick="watchAd('moves')" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (AD)</button>
+        <button class="reward-btn" onclick="buyHint()">💡 HINT (100💰)</button>
+        <button class="reward-btn" onclick="buyMoves()" style="background:#f39c12; box-shadow: 0 3px #d68910;">➕ 5 MOVES (150💰)</button>
+        <button class="reward-btn" onclick="watchAdForCoins()" style="background:#3498db; box-shadow: 0 3px #2980b9;">🎥 +200💰 (AD)</button>
     </div>
 </div>
 
@@ -279,6 +288,7 @@
     const BOMB = '💣';
     let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
     let playerName = localStorage.getItem('fb_playername') || "";
+    let coins = parseInt(localStorage.getItem('fb_coins')) || 500; // Starting Coins
     let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
     let isGameActive = false, audioInited = false;
     let startX, startY, activeCandyIdx = null;
@@ -288,6 +298,7 @@
     let musicInterval;
 
     window.onload = () => {
+        updateCoinsUI();
         if (playerName !== "") {
             document.getElementById('name-screen').style.display = 'none';
             updateNameUI();
@@ -295,12 +306,42 @@
         }
     };
 
-    function contactDev() {
-        window.location.href = "mailto:babadeveloper1@gmail.com?subject=Frutix%20Blast%20Support&body=Hi%20Baba%20Developer,";
+    function updateCoinsUI() {
+        document.querySelectorAll('.coin-display').forEach(el => el.innerText = coins);
+        localStorage.setItem('fb_coins', coins);
     }
 
-    function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
-    function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
+    function buyHint() {
+        if(coins >= 100) {
+            coins -= 100;
+            updateCoinsUI();
+            findHint();
+        } else {
+            alert("Not enough coins! Watch an ad to get 200 coins.");
+        }
+    }
+
+    function buyMoves() {
+        if(coins >= 150) {
+            coins -= 150;
+            updateCoinsUI();
+            moves += 5;
+            document.getElementById('movesShow').innerText = moves;
+        } else {
+            alert("Not enough coins!");
+        }
+    }
+
+    function watchAdForCoins() {
+        document.getElementById('ad-text').innerText = "WATCHING AD FOR COINS...";
+        document.getElementById('ad-screen').style.display = 'flex';
+        setTimeout(() => {
+            document.getElementById('ad-screen').style.display = 'none';
+            coins += 200;
+            updateCoinsUI();
+            alert("Success! You earned 200 Coins.");
+        }, 2500);
+    }
 
     function updateNameUI() {
         document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
@@ -313,24 +354,18 @@
         document.getElementById('name-screen').style.display = 'flex';
     }
 
-   function savePlayerName() {
-    const input = document.getElementById('playerNameInput').value.trim();
-    if (input === "") { alert("Please enter your name!"); return; }
-
-    playerName = input;
-    localStorage.setItem('fb_playername', playerName);
-
-    // YAHAN APNA URL PASTE KAREIN
-    const scriptURL = 'https://script.google.com/macros/s/AKfycbwNE0b6vF0lCo_tAZJ6A7L6Sy0oQ5eNUkk8GlFQ6bwIOlLmyAbBFR_ezHBl1G6hNqCt/exec';
-
-    fetch(scriptURL + '?name=' + encodeURIComponent(playerName), { mode: 'no-cors' })
-    .then(() => console.log("Success"))
-    .catch(err => console.log("Error"));
-
-    document.getElementById('name-screen').style.display = 'none';
-    updateNameUI();
-    if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
-}
+    function savePlayerName() {
+        const input = document.getElementById('playerNameInput').value.trim();
+        if (input === "") { alert("Please enter your name!"); return; }
+        playerName = input;
+        localStorage.setItem('fb_playername', playerName);
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbwNE0b6vF0lCo_tAZJ6A7L6Sy0oQ5eNUkk8GlFQ6bwIOlLmyAbBFR_ezHBl1G6hNqCt/exec';
+        fetch(scriptURL + '?name=' + encodeURIComponent(playerName), { mode: 'no-cors' })
+        .then(() => console.log("Success")).catch(err => console.log("Error"));
+        document.getElementById('name-screen').style.display = 'none';
+        updateNameUI();
+        if(document.getElementById('main-menu').style.display !== 'flex') { startSplash(); }
+    }
 
     function startSplash() {
         document.getElementById('splash').style.display = 'flex';
@@ -372,32 +407,28 @@
 
     function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
     function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
-function resetGame() {
-    if(confirm("Reset progress?")) {
-        // Local storage clear karein
-        localStorage.clear();
-        // Variable ko force reset karein
-        unlockedLevel = 1;
-        // Page ko hard reload karein
-        window.location.href = window.location.pathname + "?" + Date.now();
+    
+    function resetGame() {
+        if(confirm("Reset progress?")) {
+            localStorage.clear();
+            unlockedLevel = 1;
+            coins = 500;
+            window.location.href = window.location.pathname + "?" + Date.now();
+        }
     }
-}
+
     function showLevelMenu() {
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('level-menu').style.display = 'flex';
         const container = document.getElementById('levelContainer');
         container.innerHTML = '';
-
         for(let i = 1; i <= 250; i++) {
             const node = document.createElement('div');
             node.innerText = i;
             node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
-            if(i <= unlockedLevel) {
-                node.onclick = () => startLevel(i);
-            }
+            if(i <= unlockedLevel) { node.onclick = () => startLevel(i); }
             container.appendChild(node);
         }
-
         setTimeout(() => {
             const activeNode = container.children[unlockedLevel - 1];
             if(activeNode) activeNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -410,15 +441,11 @@ function resetGame() {
         targetCount = 20 + Math.floor(lvl * 2.5);
         initialTarget = targetCount;
         moves = Math.max(12, 28 - Math.floor(lvl / 5));
-
         iceTiles.clear();
         if(lvl >= 5) {
             let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
-            while(iceTiles.size < iceCount) {
-                iceTiles.add(Math.floor(Math.random() * 64));
-            }
+            while(iceTiles.size < iceCount) { iceTiles.add(Math.floor(Math.random() * 64)); }
         }
-
         isGameActive = true;
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('level-menu').style.display = 'none';
@@ -446,13 +473,7 @@ function resetGame() {
         grid.onpointerdown = e => {
             if(!isGameActive || !e.target.classList.contains('candy')) return;
             let idx = parseInt(e.target.id);
-
-            // BOMB CLICK LOGIC
-            if(candies[idx].innerHTML === BOMB) {
-                explodeBomb(idx);
-                return;
-            }
-
+            if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
             if(iceTiles.has(idx)) return;
             activeCandyIdx = idx;
             startX = e.clientX; startY = e.clientY;
@@ -469,9 +490,7 @@ function resetGame() {
                     if(dy > 0 && activeCandyIdx < 56) target += 8;
                     else if(dy < 0 && activeCandyIdx > 7) target -= 8;
                 }
-                if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) {
-                    swap(activeCandyIdx, target);
-                }
+                if (target >= 0 && target < 64 && target !== activeCandyIdx && !iceTiles.has(target)) { swap(activeCandyIdx, target); }
                 activeCandyIdx = null;
             }
         };
@@ -479,36 +498,21 @@ function resetGame() {
     }
 
     function explodeBomb(idx) {
-        moves--;
-        document.getElementById('movesShow').innerText = moves;
-
-        let row = Math.floor(idx / 8);
-        let col = idx % 8;
-        let toClear = new Set();
-
+        moves--; document.getElementById('movesShow').innerText = moves;
+        let row = Math.floor(idx / 8); let col = idx % 8; let toClear = new Set();
         for(let r = row-1; r <= row+1; r++) {
             for(let c = col-1; c <= col+1; c++) {
-                if(r >= 0 && r < 8 && c >= 0 && c < 8) {
-                    toClear.add(r * 8 + c);
-                }
+                if(r >= 0 && r < 8 && c >= 0 && c < 8) { toClear.add(r * 8 + c); }
             }
         }
-
-        clearMatchedTiles(toClear);
-        playNote(150, 0.2); // Explosion sound effect
+        clearMatchedTiles(toClear); playNote(150, 0.2);
     }
 
     function swap(id1, id2) {
         let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
         candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
-
-        if (checkMatches()) {
-            moves--;
-            document.getElementById('movesShow').innerText = moves;
-            processGameLogic();
-        } else {
-            setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
-        }
+        if (checkMatches()) { moves--; document.getElementById('movesShow').innerText = moves; processGameLogic(); }
+        else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
     }
 
     function checkMatches() {
@@ -522,75 +526,33 @@ function resetGame() {
     }
 
     function processGameLogic() {
-        let toClear = new Set();
-        let bombEligible = false;
-
+        let toClear = new Set(); let bombEligible = false;
         for(let i=0; i<64; i++) {
             if(candies[i].innerHTML === BOMB || candies[i].innerHTML === '') continue;
-
-            // Horizontal matches
-            let hMatch = [i];
-            let nextH = i + 1;
-            while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) {
-                hMatch.push(nextH);
-                nextH++;
-            }
-            if(hMatch.length >= 3) {
-                hMatch.forEach(idx => toClear.add(idx));
-                if(hMatch.length >= 4) bombEligible = true;
-            }
-
-            // Vertical matches
-            let vMatch = [i];
-            let nextV = i + 8;
-            while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) {
-                vMatch.push(nextV);
-                nextV += 8;
-            }
-            if(vMatch.length >= 3) {
-                vMatch.forEach(idx => toClear.add(idx));
-                if(vMatch.length >= 4) bombEligible = true;
-            }
+            let hMatch = [i]; let nextH = i + 1;
+            while(nextH % 8 !== 0 && candies[nextH] && candies[nextH].innerHTML === candies[i].innerHTML) { hMatch.push(nextH); nextH++; }
+            if(hMatch.length >= 3) { hMatch.forEach(idx => toClear.add(idx)); if(hMatch.length >= 4) bombEligible = true; }
+            let vMatch = [i]; let nextV = i + 8;
+            while(nextV < 64 && candies[nextV] && candies[nextV].innerHTML === candies[i].innerHTML) { vMatch.push(nextV); nextV += 8; }
+            if(vMatch.length >= 3) { vMatch.forEach(idx => toClear.add(idx)); if(vMatch.length >= 4) bombEligible = true; }
         }
-
         if(toClear.size > 0) {
-            // If 4+ match, turn one of the cleared tiles into a bomb
             let bombIdx = -1;
-            if(bombEligible) {
-                bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)];
-            }
-
+            if(bombEligible) { bombIdx = Array.from(toClear)[Math.floor(Math.random() * toClear.size)]; }
             clearMatchedTiles(toClear, bombIdx);
-        } else {
-            checkEndGame();
-        }
+        } else { checkEndGame(); }
     }
 
     function clearMatchedTiles(toClear, bombIdx = -1) {
         toClear.forEach(idx => {
             if(candies[idx].innerHTML === targetFruit && targetCount > 0) targetCount--;
-
-            if(iceTiles.has(idx)) {
-                iceTiles.delete(idx);
-                candies[idx].classList.remove('ice-tile');
-            }
-
-            if(idx === bombIdx) {
-                candies[idx].innerHTML = BOMB;
-                candies[idx].classList.add('bomb-tile');
-            } else {
-                candies[idx].innerHTML = '';
-                candies[idx].classList.remove('bomb-tile');
-                candies[idx].style.transform = 'scale(0)';
-            }
+            if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
+            if(idx === bombIdx) { candies[idx].innerHTML = BOMB; candies[idx].classList.add('bomb-tile'); }
+            else { candies[idx].innerHTML = ''; candies[idx].classList.remove('bomb-tile'); candies[idx].style.transform = 'scale(0)'; }
         });
-
         updateUI();
-
         setTimeout(() => {
-            toClear.forEach(idx => {
-                if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)';
-            });
+            toClear.forEach(idx => { if(idx !== bombIdx) candies[idx].style.transform = 'scale(1)'; });
             fillGrid();
         }, 300);
     }
@@ -601,50 +563,33 @@ function resetGame() {
             if(candies[i].innerHTML !== '' && !iceTiles.has(i) && candies[i+8].innerHTML === '' && !iceTiles.has(i+8)) {
                 candies[i+8].innerHTML = candies[i].innerHTML;
                 candies[i+8].className = candies[i].className;
-                candies[i].innerHTML = '';
-                candies[i].className = 'candy';
+                candies[i].innerHTML = ''; candies[i].className = 'candy';
                 moved = true;
             }
         }
-
         for(let i=0; i<8; i++) {
             if(candies[i].innerHTML === '' && !iceTiles.has(i)) {
                 candies[i].innerHTML = candyTypes[Math.floor(Math.random()*candyTypes.length)];
                 moved = true;
             }
         }
-
         if(moved) setTimeout(() => fillGrid(), 100);
-        else {
-            if(checkMatches()) processGameLogic();
-            else checkEndGame();
-        }
+        else { if(checkMatches()) processGameLogic(); else checkEndGame(); }
     }
 
     function checkEndGame() {
-        // New Condition: Level clears only if Target Fruit is done AND all Ice is gone
         if(targetCount <= 0 && iceTiles.size === 0) {
-            if(currentLvl == unlockedLevel && unlockedLevel < 250) {
-                unlockedLevel++;
-                localStorage.setItem('fb_unlocked', unlockedLevel);
-            }
+            if(currentLvl == unlockedLevel && unlockedLevel < 250) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
+            coins += 50; // Give Coins on Win
+            updateCoinsUI();
             isGameActive = false;
             document.getElementById('win-screen').style.display = 'flex';
         } else if(moves <= 0) {
-            isGameActive = false;
-            alert("GAME OVER! Target ya Ice reh gayi!");
-            backToMenu();
+            isGameActive = false; alert("GAME OVER!"); backToMenu();
         }
     }
 
-    function playNextLevel() {
-        if(currentLvl < 250) {
-            startLevel(currentLvl + 1);
-        } else {
-            alert("CONGRATULATIONS! ALL LEVELS COMPLETE!");
-            backToMenu();
-        }
-    }
+    function playNextLevel() { if(currentLvl < 250) startLevel(currentLvl + 1); else { alert("ALL COMPLETE!"); backToMenu(); } }
 
     function willMatch(i, fruit) {
         if (i % 8 >= 2 && candies[i-1].innerHTML === fruit && candies[i-2].innerHTML === fruit) return true;
@@ -654,29 +599,13 @@ function resetGame() {
 
     function updateUI() {
         document.getElementById('targetShow').innerText = `${targetFruit} x ${Math.max(0, targetCount)}`;
-
-        // Show Ice Count in UI
         const iceUI = document.getElementById('iceShow');
-        if(iceTiles.size > 0) {
-            iceUI.innerText = `❄️ ICE REMAINING: ${iceTiles.size}`;
-        } else {
-            iceUI.innerText = "";
-        }
-
+        iceUI.innerText = iceTiles.size > 0 ? `❄️ ICE: ${iceTiles.size}` : "";
         let percent = ((initialTarget - targetCount) / initialTarget) * 100;
         document.getElementById('progress-fill').style.width = Math.min(100, percent) + '%';
         if(percent >= 33) document.getElementById('star1').classList.add('active');
         if(percent >= 66) document.getElementById('star2').classList.add('active');
         if(percent >= 100) document.getElementById('star3').classList.add('active');
-    }
-
-    function watchAd(type) {
-        document.getElementById('ad-screen').style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('ad-screen').style.display = 'none';
-            if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
-            if(type === 'hint') findHint();
-        }, 2000);
     }
 
     function findHint() {
@@ -685,15 +614,10 @@ function resetGame() {
             let neighbors = [];
             if(i % 8 < 7 && !iceTiles.has(i+1)) neighbors.push(i+1);
             if(i < 56 && !iceTiles.has(i+8)) neighbors.push(i+8);
-
             for(let n of neighbors) {
                 if(checkSwapMatch(i, n)) {
-                    candies[i].classList.add('hint-active');
-                    candies[n].classList.add('hint-active');
-                    setTimeout(() => {
-                        candies[i].classList.remove('hint-active');
-                        candies[n].classList.remove('hint-active');
-                    }, 2000);
+                    candies[i].classList.add('hint-active'); candies[n].classList.add('hint-active');
+                    setTimeout(() => { candies[i].classList.remove('hint-active'); candies[n].classList.remove('hint-active'); }, 2000);
                     return;
                 }
             }
@@ -708,19 +632,16 @@ function resetGame() {
         return m;
     }
 
-    function resetStars() {
-        document.querySelectorAll('.star').forEach(s => s.classList.remove('active'));
-    }
-
+    function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
+    function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
+    function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
     function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
     function updateActiveUsers() {
-    // Ye 100 se 150 ke darmiyan random number dikhayega
-    let count = Math.floor(Math.random() * (150 - 100 + 1)) + 100;
-    document.getElementById('user-count').innerText = count;
-}
-// Har 5 second baad update hoga
-setInterval(updateActiveUsers, 5000);
+        let count = Math.floor(Math.random() * (150 - 100 + 1)) + 100;
+        document.getElementById('user-count').innerText = count;
+    }
+    setInterval(updateActiveUsers, 5000);
 </script>
 </body>
 </html>
