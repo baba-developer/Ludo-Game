@@ -12,20 +12,20 @@
             overflow: hidden; touch-action: none; color: white;
         }
 
+        /* Coin Box Styling */
+        .coin-box {
+            position: fixed; top: 15px; left: 15px; background: rgba(0, 0, 0, 0.7);
+            padding: 8px 15px; border-radius: 25px; color: #f9d342; font-weight: bold;
+            display: flex; align-items: center; border: 2px solid #f9d342;
+            font-size: 16px; z-index: 45000; box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
         #music-toggle-icon {
             position: fixed; top: 15px; right: 15px; width: 40px; height: 40px;
             background: rgba(233, 69, 96, 0.8); border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             z-index: 40000; cursor: pointer; border: 2px solid #fff;
             box-shadow: 0 0 10px rgba(0,0,0,0.5); font-size: 20px;
-        }
-
-        /* NEW COIN BOX STYLING */
-        .coin-box {
-            position: fixed; top: 15px; left: 15px; z-index: 40000;
-            background: rgba(0,0,0,0.6); padding: 5px 12px; border-radius: 20px;
-            color: #f9d342; font-weight: bold; display: flex; align-items: center;
-            border: 2px solid #f9d342; font-size: 14px;
         }
 
         #name-screen {
@@ -89,8 +89,7 @@
         }
 
         .level-node {
-            width: 70px; height: 70px;
-            background: #e94560; border-radius: 50%;
+            width: 70px; height: 70px; background: #e94560; border-radius: 50%;
             display: flex; align-items: center; justify-content: center;
             font-size: 20px; font-weight: bold; border: 4px solid #fff;
             box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4);
@@ -138,9 +137,8 @@
             user-select: none; position: relative;
         }
 
-        .ice-tile { background: rgba(173, 216, 230, 0.7) !important; border: 2px solid #fff; box-shadow: inset 0 0 10px #fff; border-radius: 6px; }
+        .ice-tile { background: rgba(173, 216, 230, 0.7) !important; border: 2px solid #fff; box-shadow: inset 0 0 10px #fff; }
         .ice-tile::after { content: '❄️'; position: absolute; font-size: 10px; top: 1px; right: 1px; opacity: 0.8; }
-
         .bomb-tile { background: radial-gradient(circle, #ff4d4d, #1a1a2e) !important; animation: pulse 0.5s infinite alternate; }
         @keyframes pulse { from { transform: scale(1); } to { transform: scale(1.05); } }
 
@@ -162,13 +160,13 @@
 </head>
 <body onclick="initAudio()">
 
+<div class="coin-box">💰 <span id="coin-count">500</span></div>
 <div id="music-toggle-icon" onclick="toggleMusic()">🔊</div>
-<div class="coin-box">💰 <span class="coin-display">500</span></div>
 
 <div id="win-screen">
     <h1 style="color: #f9d342; font-size: 40px; margin: 10px;">LEVEL CLEAR!</h1>
     <div style="font-size: 50px; margin-bottom: 20px;">⭐⭐⭐</div>
-    <div style="color:#2ecc71; font-weight:bold; margin-bottom:10px;">+50 COINS!</div>
+    <p id="win-coin-msg" style="color:#f9d342; font-weight:bold;">+50 COINS ADDED!</p>
     <button class="btn" onclick="playNextLevel()">NEXT LEVEL</button>
     <button class="btn" style="background: #555; box-shadow: 0 4px #333;" onclick="backToMenu()">EXIT TO MENU</button>
 </div>
@@ -178,7 +176,7 @@
     <div class="policy-content">
         <p><b>Data Storage:</b> We do not collect personal data. Your progress is saved locally.</p>
         <p><b>Ads:</b> We use third-party ads to keep the game free.</p>
-        <p><b>Agreement:</b> By playing, you agree to these terms.</p>
+        <p><b>Security:</b> Your privacy is our priority.</p>
     </div>
     <button class="btn" onclick="closePrivacy()">CLOSE</button>
 </div>
@@ -198,7 +196,10 @@
     <button class="btn" onclick="closeSettings()">CLOSE</button>
 </div>
 
-<div id="ad-screen"><h3>REWARD LOADING...</h3><div class="loader-circle"></div></div>
+<div id="ad-screen">
+    <h3>REWARD LOADING...</h3>
+    <div class="loader-circle"></div>
+</div>
 
 <div id="splash">
     <h1 id="splash-name">Frutix Blast</h1>
@@ -215,7 +216,7 @@
         <button class="btn" onclick="window.open('https://www.instagram.com/babadeveloper1/', '_blank')" style="background:#C13584; box-shadow: 0 4px #833AB4;">FOLLOW US</button>
         <button class="btn" onclick="openSettings()" style="background:#4e31aa;">SETTINGS</button>
         <button class="btn" onclick="openPrivacy()" style="background:#2c3e50;">PRIVACY POLICY</button>
-        <div id="active-users-box" style="color: #27ae60; font-weight: bold; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 20px;">
+        <div style="color: #27ae60; font-weight: bold; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.3); padding: 5px 15px; border-radius: 20px;">
             🟢 Active Players: <span id="user-count">124</span>
         </div>
     </div>
@@ -224,9 +225,10 @@
 
 <div id="level-menu">
     <h2>LEVELS (1-250)</h2>
-    <div class="map-container" id="mapScroll"><div class="level-path" id="levelContainer"></div></div>
+    <div class="map-container" id="mapScroll">
+        <div class="level-path" id="levelContainer"></div>
+    </div>
     <button class="btn" style="background:#555;" onclick="hideLevelMenu()">BACK</button>
-    <div class="dev-footer">POWERED BY BABA-DEVELOPER</div>
 </div>
 
 <div id="game-ui">
@@ -253,15 +255,20 @@
 <script>
     const candyTypes = ['🍎', '🍇', '🍊', '🫐', '🍋'];
     const BOMB = '💣';
+    
+    // Core Data
+    let coins = parseInt(localStorage.getItem('fb_coins')) || 500;
     let unlockedLevel = parseInt(localStorage.getItem('fb_unlocked')) || 1;
     let playerName = localStorage.getItem('fb_playername') || "";
-    let coins = parseInt(localStorage.getItem('fb_coins')) || 500; // Fixed: Added coins back
-
+    
     let musicOn = true, currentLvl = 1, moves = 30, targetFruit = '', targetCount = 20, initialTarget = 20, candies = [];
-    let isGameActive = false, audioInited = false, startX, startY, activeCandyIdx = null;
+    let isGameActive = false, audioInited = false;
+    let startX, startY, activeCandyIdx = null;
     let iceTiles = new Set();
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    let musicInterval;
+
+    // Sound System
+    const bgMusic = new Audio('https://www.soundjay.com/free-music/puzzles-1.mp3');
+    bgMusic.loop = true;
 
     window.onload = () => {
         updateCoinsUI();
@@ -272,30 +279,33 @@
         }
     };
 
-    function updateNameUI() {
-        const welcome = document.getElementById('welcome-text');
-        if(welcome) welcome.innerText = "Hi, " + playerName + "!";
-        const pDisplay = document.getElementById('player-display');
-        if(pDisplay) pDisplay.innerText = playerName;
-        const pInput = document.getElementById('playerNameInput');
-        if(pInput) pInput.value = playerName;
+    function updateCoinsUI() {
+        document.getElementById('coin-count').innerText = coins;
+        localStorage.setItem('fb_coins', coins);
     }
 
-    function updateCoinsUI() {
-        document.querySelectorAll('.coin-display').forEach(el => el.innerText = coins);
-        localStorage.setItem('fb_coins', coins);
+    function initAudio() { if(!audioInited) { audioInited = true; if(musicOn) bgMusic.play(); } }
+
+    function toggleMusic() {
+        musicOn = !musicOn;
+        musicOn ? bgMusic.play() : bgMusic.pause();
+        document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`;
+        document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇';
     }
 
     function savePlayerName() {
         const input = document.getElementById('playerNameInput').value.trim();
-        if (input === "") { alert("Please enter your name!"); return; }
+        if (input === "") { alert("Enter name!"); return; }
         playerName = input;
         localStorage.setItem('fb_playername', playerName);
-        const scriptURL = 'https://script.google.com/macros/s/AKfycbwNE0b6vF0lCo_tAZJ6A7L6Sy0oQ5eNUkk8GlFQ6bwIOlLmyAbBFR_ezHBl1G6hNqCt/exec';
-        fetch(scriptURL + '?name=' + encodeURIComponent(playerName), { mode: 'no-cors' });
         document.getElementById('name-screen').style.display = 'none';
         updateNameUI();
-        if(document.getElementById('main-menu').style.display !== 'flex') startSplash();
+        startSplash();
+    }
+
+    function updateNameUI() {
+        document.getElementById('welcome-text').innerText = "Hi, " + playerName + "!";
+        document.getElementById('player-display').innerText = playerName;
     }
 
     function startSplash() {
@@ -306,23 +316,14 @@
         }, 1500);
     }
 
-    function initAudio() { if(!audioInited) { audioInited = true; playBGM(); } }
-    function playBGM() { musicInterval = setInterval(() => { if(musicOn) playNote(261.6, 0.4); }, 3000); }
-    function playNote(freq, dur) { if(!musicOn) return; try { const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.frequency.setValueAtTime(freq, audioCtx.currentTime); gain.gain.setValueAtTime(0.005, audioCtx.currentTime); osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + dur); } catch(e) {} }
-    function toggleMusic() { musicOn = !musicOn; document.getElementById('music-btn').innerText = `MUSIC: ${musicOn ? 'ON' : 'OFF'}`; document.getElementById('music-toggle-icon').innerText = musicOn ? '🔊' : '🔇'; }
-    function openPrivacy() { document.getElementById('privacy-overlay').style.display = 'flex'; }
-    function closePrivacy() { document.getElementById('privacy-overlay').style.display = 'none'; }
-    function openSettings() { document.getElementById('settings-overlay').style.display = 'flex'; }
-    function closeSettings() { document.getElementById('settings-overlay').style.display = 'none'; }
-    function openNameChange() { closeSettings(); document.getElementById('name-screen').style.display = 'flex'; }
-    function resetGame() { if(confirm("Are you sure?")) { localStorage.clear(); location.reload(); } }
-
     function showLevelMenu() {
         document.getElementById('main-menu').style.display = 'none';
         document.getElementById('level-menu').style.display = 'flex';
-        const container = document.getElementById('levelContainer'); container.innerHTML = '';
+        const container = document.getElementById('levelContainer');
+        container.innerHTML = '';
         for(let i = 1; i <= 250; i++) {
-            const node = document.createElement('div'); node.innerText = i;
+            const node = document.createElement('div');
+            node.innerText = i;
             node.className = 'level-node' + (i > unlockedLevel ? ' locked' : '');
             if(i <= unlockedLevel) node.onclick = () => startLevel(i);
             container.appendChild(node);
@@ -330,11 +331,18 @@
     }
 
     function startLevel(lvl) {
-        currentLvl = lvl; targetFruit = candyTypes[Math.floor(Math.random() * 5)];
-        targetCount = 20 + Math.floor(lvl * 2.5); initialTarget = targetCount;
-        moves = Math.max(12, 28 - Math.floor(lvl / 5)); iceTiles.clear();
-        if(lvl >= 5) { let iceCount = Math.min(25, 5 + Math.floor(lvl / 3)); while(iceTiles.size < iceCount) iceTiles.add(Math.floor(Math.random() * 64)); }
-        isGameActive = true; document.getElementById('level-menu').style.display = 'none';
+        currentLvl = lvl;
+        targetFruit = candyTypes[Math.floor(Math.random() * candyTypes.length)];
+        targetCount = 20 + Math.floor(lvl * 2.5);
+        initialTarget = targetCount;
+        moves = Math.max(12, 28 - Math.floor(lvl / 5));
+        iceTiles.clear();
+        if(lvl >= 5) {
+            let iceCount = Math.min(25, 5 + Math.floor(lvl / 3));
+            while(iceTiles.size < iceCount) iceTiles.add(Math.floor(Math.random() * 64));
+        }
+        isGameActive = true;
+        document.getElementById('level-menu').style.display = 'none';
         document.getElementById('game-ui').style.display = 'block';
         document.getElementById('lvlShow').innerText = "Lvl " + lvl;
         document.getElementById('movesShow').innerText = moves;
@@ -344,22 +352,32 @@
     function initGrid() {
         const grid = document.getElementById('grid'); grid.innerHTML = ''; candies = [];
         for(let i=0; i<64; i++) {
-            const c = document.createElement('div'); c.className = 'candy' + (iceTiles.has(i) ? ' ice-tile' : ''); c.id = i;
-            c.innerHTML = candyTypes[Math.floor(Math.random()*5)]; grid.appendChild(c); candies.push(c);
+            const c = document.createElement('div');
+            c.className = 'candy' + (iceTiles.has(i) ? ' ice-tile' : '');
+            c.id = i;
+            let f; do { f = candyTypes[Math.floor(Math.random()*candyTypes.length)]; } while (willMatch(i, f));
+            c.innerHTML = f; grid.appendChild(c); candies.push(c);
         }
         setupTouch();
     }
 
     function setupTouch() {
         const grid = document.getElementById('grid');
-        grid.onpointerdown = e => { if(!isGameActive || !e.target.id) return; activeCandyIdx = parseInt(e.target.id); startX = e.clientX; startY = e.clientY; };
+        grid.onpointerdown = e => {
+            if(!isGameActive || !e.target.classList.contains('candy')) return;
+            let idx = parseInt(e.target.id);
+            if(candies[idx].innerHTML === BOMB) { explodeBomb(idx); return; }
+            if(iceTiles.has(idx)) return;
+            activeCandyIdx = idx; startX = e.clientX; startY = e.clientY;
+        };
         grid.onpointermove = e => {
             if (activeCandyIdx === null) return;
             const dx = e.clientX - startX, dy = e.clientY - startY;
             if (Math.abs(dx) > 25 || Math.abs(dy) > 25) {
-                let target = activeCandyIdx;
-                if (Math.abs(dx) > Math.abs(dy)) target += (dx > 0 ? 1 : -1); else target += (dy > 0 ? 8 : -8);
-                if (target >= 0 && target < 64) swap(activeCandyIdx, target);
+                let t = activeCandyIdx;
+                if (Math.abs(dx) > Math.abs(dy)) t += (dx > 0) ? 1 : -1;
+                else t += (dy > 0) ? 8 : -8;
+                if (t >= 0 && t < 64 && !iceTiles.has(t)) swap(activeCandyIdx, t);
                 activeCandyIdx = null;
             }
         };
@@ -369,44 +387,59 @@
         let v1 = candies[id1].innerHTML, v2 = candies[id2].innerHTML;
         candies[id1].innerHTML = v2; candies[id2].innerHTML = v1;
         if (checkMatches()) { moves--; document.getElementById('movesShow').innerText = moves; processGameLogic(); }
-        else { setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200); }
+        else setTimeout(() => { candies[id1].innerHTML = v1; candies[id2].innerHTML = v2; }, 200);
     }
 
     function checkMatches() {
         for(let i=0; i<64; i++) {
-            if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) return true;
-            if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) return true;
-        } return false;
+            if(candies[i].innerHTML==='' || candies[i].innerHTML===BOMB) continue;
+            if(i%8<6 && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) return true;
+            if(i<48 && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) return true;
+        }
+        return false;
     }
 
     function processGameLogic() {
         let toClear = new Set();
         for(let i=0; i<64; i++) {
-            if(i%8<6 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+1].innerHTML && candies[i].innerHTML===candies[i+2].innerHTML) { toClear.add(i); toClear.add(i+1); toClear.add(i+2); }
-            if(i<48 && candies[i].innerHTML!='' && candies[i].innerHTML===candies[i+8].innerHTML && candies[i].innerHTML===candies[i+16].innerHTML) { toClear.add(i); toClear.add(i+8); toClear.add(i+16); }
+            if(candies[i].innerHTML==='' || candies[i].innerHTML===BOMB) continue;
+            let h=[i], nextH=i+1;
+            while(nextH%8!==0 && candies[nextH] && candies[nextH].innerHTML===candies[i].innerHTML) { h.push(nextH); nextH++; }
+            if(h.length>=3) h.forEach(x => toClear.add(x));
+            let v=[i], nextV=i+8;
+            while(nextV<64 && candies[nextV] && candies[nextV].innerHTML===candies[i].innerHTML) { v.push(nextV); nextV+=8; }
+            if(v.length>=3) v.forEach(x => toClear.add(x));
         }
-        if(toClear.size > 0) {
-            toClear.forEach(idx => {
-                if(candies[idx].innerHTML === targetFruit) targetCount--;
-                if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
-                candies[idx].innerHTML = '';
-            });
-            updateUI(); setTimeout(fillGrid, 300);
-        } else checkEndGame();
+        if(toClear.size > 0) clearTiles(toClear);
+        else checkEndGame();
+    }
+
+    function clearTiles(set) {
+        set.forEach(idx => {
+            if(candies[idx].innerHTML === targetFruit) targetCount--;
+            if(iceTiles.has(idx)) { iceTiles.delete(idx); candies[idx].classList.remove('ice-tile'); }
+            candies[idx].innerHTML = '';
+        });
+        updateUI(); setTimeout(fillGrid, 300);
     }
 
     function fillGrid() {
-        for(let i=55; i>=0; i--) if(candies[i+8].innerHTML==='') { candies[i+8].innerHTML=candies[i].innerHTML; candies[i].innerHTML=''; }
-        for(let i=0; i<8; i++) if(candies[i].innerHTML==='') candies[i].innerHTML=candyTypes[Math.floor(Math.random()*5)];
-        if(checkMatches()) processGameLogic(); else checkEndGame();
+        let moved = false;
+        for(let i=55; i>=0; i--) {
+            if(candies[i].innerHTML!=='' && !iceTiles.has(i) && candies[i+8].innerHTML==='') {
+                candies[i+8].innerHTML = candies[i].innerHTML; candies[i].innerHTML = ''; moved = true;
+            }
+        }
+        for(let i=0; i<8; i++) if(candies[i].innerHTML==='') { candies[i].innerHTML = candyTypes[Math.floor(Math.random()*5)]; moved = true; }
+        if(moved) setTimeout(fillGrid, 100); else processGameLogic();
     }
 
     function checkEndGame() {
         if(targetCount <= 0 && iceTiles.size === 0) {
-            if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
             coins += 50; updateCoinsUI();
+            if(currentLvl == unlockedLevel) { unlockedLevel++; localStorage.setItem('fb_unlocked', unlockedLevel); }
             document.getElementById('win-screen').style.display = 'flex';
-        } else if(moves <= 0) { alert("GAME OVER!"); backToMenu(); }
+        } else if(moves <= 0) { alert("Out of moves!"); backToMenu(); }
     }
 
     function updateUI() {
@@ -416,28 +449,20 @@
         document.getElementById('progress-fill').style.width = Math.min(100, p) + '%';
     }
 
-    function watchAd(type) {
-        document.getElementById('ad-screen').style.display = 'flex';
-        setTimeout(() => {
-            document.getElementById('ad-screen').style.display = 'none';
-            if(type === 'moves') { moves += 5; document.getElementById('movesShow').innerText = moves; }
-            if(type === 'hint') findHint();
-        }, 2000);
+    function resetGame() { if(confirm("Reset progress?")) { localStorage.clear(); location.reload(); } }
+    function backToMenu() { isGameActive = false; document.getElementById('game-ui').style.display='none'; document.getElementById('win-screen').style.display='none'; document.getElementById('main-menu').style.display='flex'; }
+    function willMatch(i, f) {
+        if(i%8>=2 && candies[i-1].innerHTML===f && candies[i-2].innerHTML===f) return true;
+        if(i>=16 && candies[i-8].innerHTML===f && candies[i-16].innerHTML===f) return true;
+        return false;
     }
-
-    function findHint() {
-        for(let i=0; i<64; i++) {
-            candies[i].classList.add('hint-active');
-            setTimeout(() => candies[i].classList.remove('hint-active'), 1000);
-            break;
-        }
+    function watchAd(t) { 
+        document.getElementById('ad-screen').style.display='flex'; 
+        setTimeout(() => { 
+            document.getElementById('ad-screen').style.display='none'; 
+            if(t==='moves') moves+=5; updateUI(); 
+        }, 2000); 
     }
-
-    function resetStars() { document.querySelectorAll('.star').forEach(s => s.classList.remove('active')); }
-    function hideLevelMenu() { document.getElementById('level-menu').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-    function backToMenu() { document.getElementById('game-ui').style.display = 'none'; document.getElementById('win-screen').style.display = 'none'; document.getElementById('main-menu').style.display = 'flex'; }
-    function playNextLevel() { startLevel(currentLvl + 1); }
-    setInterval(() => { document.getElementById('user-count').innerText = Math.floor(Math.random() * 50) + 100; }, 5000);
 </script>
 </body>
 </html>
